@@ -1,49 +1,55 @@
 """
-Viral YouTube Shorts Generator — Kinetic Typography Style
-Uses ASS karaoke subtitles + FFmpeg drawtext for CapCut-style animation.
-This is the format actual viral faceless channels use.
+Viral YouTube Shorts Generator — Real Animation Style
+Uses Pillow frame-by-frame rendering → FFmpeg pipe for animated backgrounds.
+ASS karaoke subtitles for CapCut-style word-by-word captions.
 """
 
 import os
 import re
 import math
-import json
 import time
 import textwrap
 import random
 import logging
 import subprocess
-import tempfile
+import struct
+import zlib
 from typing import List, Tuple, Optional
+from io import BytesIO
 
 log = logging.getLogger(__name__)
 
 WIDTH  = 1080
 HEIGHT = 1920
-FPS    = 30
+FPS    = 15  # 15fps for speed on GitHub Actions
 
 ACCENT_CYAN   = (0, 212, 255)
+ACCENT_PURPLE = (123, 47, 187)
 ACCENT_YELLOW = (255, 220, 0)
 ACCENT_RED    = (255, 50, 50)
-BG_DARK       = (10, 10, 15)
+BG_DARK       = (10, 10, 18)
+BG_MID        = (15, 12, 30)
 
-# Font paths (Ubuntu for GitHub Actions + macOS for local)
-FONT_PATHS = [
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-    "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
-    "/System/Library/Fonts/Helvetica.ttc",
-]
-FONT_PATH = next((f for f in FONT_PATHS if os.path.exists(f)), "Arial")
 
+# ══════════════════════════════════════════════════════════════════
+#  FONT HELPERS
+# ══════════════════════════════════════════════════════════════════
 
 def get_font(size, bold=False):
     from PIL import ImageFont
-    candidates = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-        "/System/Library/Fonts/Helvetica.ttc",
-    ]
+    if bold:
+        candidates = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+        ]
+    else:
+        candidates = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+        ]
     for f in candidates:
         try:
             return ImageFont.truetype(f, size)
@@ -53,63 +59,309 @@ def get_font(size, bold=False):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  ASS SUBTITLE GENERATOR (Karaoke + Kinetic Effects)
+#  PARTICLE SYSTEM (pure math, no pygame needed)
 # ══════════════════════════════════════════════════════════════════
 
-def generate_ass_subtitles(
-    script: str,
-    audio_duration: float,
-    output_path: str,
-) -> str:
-    """
-    Generate ASS subtitles with karaoke word-by-word highlighting
-    and CapCut-style bounce/pop effects.
+class Particle:
+    __slots__ = ('x', 'y', 'vx', 'vy', 'size', 'color', 'alpha', 'life', 'max_life', 'wobble_amp', 'wobble_freq')
 
-    Uses \\kf tags for progressive color fill (karaoke highlighting).
-    Words appear in white, then highlight to cyan as spoken.
+    def __init__(self, w, h, color=None):
+        self.x = random.uniform(0, w)
+        self.y = random.uniform(h * 0.3, h * 1.2)
+        self.vx = random.uniform(-0.3, 0.3)
+        self.vy = random.uniform(-1.5, -0.5)
+        self.size = random.uniform(1.5, 4.0)
+        self.color = color or random.choice([ACCENT_CYAN, ACCENT_PURPLE, (255, 255, 255)])
+        self.alpha = random.uniform(0.3, 0.8)
+        self.life = 0.0
+        self.max_life = random.uniform(4.0, 10.0)
+        self.wobble_amp = random.uniform(10, 40)
+        self.wobble_freq = random.uniform(0.5, 2.0)
+
+    def update(self, dt):
+        self.life += dt
+        self.x += self.vx * dt * 60 + math.sin(self.life * self.wobble_freq) * self.wobble_amp * dt
+        self.y += self.vy * dt * 60
+        # Fade in/out
+        progress = self.life / self.max_life
+        if progress < 0.1:
+            self.alpha = min(0.8, progress / 0.1 * 0.8)
+        elif progress > 0.7:
+            self.alpha = max(0, (1 - progress) / 0.3 * 0.8)
+        else:
+            self.alpha = 0.8
+
+    def alive(self):
+        return self.life < self.max_life and self.y > -50
+
+
+class GlowOrb:
+    __slots__ = ('x', 'y', 'vx', 'vy', 'base_radius', 'color', 'phase', 'speed')
+
+    def __init__(self, w, h):
+        self.x = random.uniform(w * 0.1, w * 0.9)
+        self.y = random.uniform(h * 0.2, h * 0.8)
+        self.vx = random.uniform(-0.5, 0.5)
+        self.vy = random.uniform(-0.3, 0.3)
+        self.base_radius = random.uniform(60, 120)
+        self.color = random.choice([ACCENT_CYAN, ACCENT_PURPLE])
+        self.phase = random.uniform(0, 2 * math.pi)
+        self.speed = random.uniform(0.3, 0.8)
+
+    def update(self, dt, t):
+        self.x += self.vx * dt * 30
+        self.y += self.vy * dt * 30
+        # Gentle pulsing
+        pulse = 1.0 + 0.3 * math.sin(t * self.speed + self.phase)
+        return int(self.base_radius * pulse)
+
+    def draw(self, img, t):
+        from PIL import ImageDraw
+        radius = self.update(1.0 / FPS, t)
+        draw = ImageDraw.Draw(img)
+        r, g, b = self.color
+        # Draw concentric circles for glow
+        for i in range(radius, 0, -2):
+            alpha_factor = (1 - i / radius) ** 2
+            a = int(25 * alpha_factor)
+            if a < 1:
+                continue
+            # Blend: manual pixel-level glow
+            cx, cy = int(self.x), int(self.y)
+            x0, y0 = max(0, cx - i), max(0, cy - i)
+            x1, y1 = min(WIDTH, cx + i), min(HEIGHT, cy + i)
+            if x1 > x0 and y1 > y0:
+                draw.ellipse([x0, y0, x1, y1], fill=(r, g, b, a))
+
+
+# ══════════════════════════════════════════════════════════════════
+#  BACKGROUND FRAME GENERATOR (Pillow-based)
+# ══════════════════════════════════════════════════════════════════
+
+def _draw_gradient_bg(img, t):
+    """Draw animated dark gradient with subtle color shift."""
+    from PIL import ImageDraw
+    draw = ImageDraw.Draw(img)
+    shift = math.sin(t * 0.3) * 10
+    for y in range(0, HEIGHT, 4):
+        ratio = y / HEIGHT
+        r = int(BG_DARK[0] + (BG_MID[0] - BG_DARK[0]) * ratio + shift * ratio)
+        g = int(BG_DARK[1] + (BG_MID[1] - BG_DARK[1]) * ratio)
+        b = int(BG_DARK[2] + (BG_MID[2] - BG_DARK[2]) * ratio - shift * 0.5 * ratio)
+        r, g, b = max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b))
+        draw.rectangle([(0, y), (WIDTH, y + 4)], fill=(r, g, b))
+
+
+def _draw_vignette(img):
+    """Draw vignette (dark edges)."""
+    from PIL import ImageDraw
+    draw = ImageDraw.Draw(img)
+    cx, cy = WIDTH // 2, HEIGHT // 2
+    max_dist = math.sqrt(cx ** 2 + cy ** 2)
+    # Approximate vignette with concentric rectangles
+    for i in range(20):
+        frac = i / 20
+        inset = int(frac * min(WIDTH, HEIGHT) * 0.4)
+        alpha = int(80 * frac ** 2)
+        if alpha < 1:
+            continue
+        x0, y0 = inset, inset
+        x1, y1 = WIDTH - inset, HEIGHT - inset
+        # Draw semi-transparent dark border
+        for edge_inset in range(max(0, inset - 3), inset + 3):
+            a = int(alpha * (1 - abs(edge_inset - inset) / 3))
+            if a < 1:
+                continue
+            draw.rectangle(
+                [edge_inset, edge_inset, WIDTH - edge_inset, HEIGHT - edge_inset],
+                outline=(0, 0, 0, a)
+            )
+        break
+
+
+def _draw_particles_on_frame(img, particles, orbs, t):
+    """Draw all particles and orbs onto the frame."""
+    from PIL import ImageDraw
+    draw = ImageDraw.Draw(img)
+
+    # Draw glow orbs first (background layer)
+    for orb in orbs:
+        radius = orb.update(1.0 / FPS, t)
+        r, g, b = orb.color
+        cx, cy = int(orb.x), int(orb.y)
+        # Soft glow layers
+        for i in range(radius, 0, -4):
+            alpha_factor = (1 - i / radius) ** 1.5
+            a = int(30 * alpha_factor)
+            if a < 1:
+                continue
+            x0, y0 = max(0, cx - i), max(0, cy - i)
+            x1, y1 = min(WIDTH, cx + i), min(HEIGHT, cy + i)
+            if x1 > x0 and y1 > y0:
+                draw.ellipse([x0, y0, x1, y1], fill=(r, g, b, a))
+
+    # Draw particles
+    for p in particles:
+        if not p.alive():
+            continue
+        r, g, b = p.color
+        a = int(p.alpha * 255)
+        if a < 1:
+            continue
+        cx, cy = int(p.x), int(p.y)
+        sz = max(1, int(p.size))
+        x0, y0 = max(0, cx - sz), max(0, cy - sz)
+        x1, y1 = min(WIDTH, cx + sz), min(HEIGHT, cy + sz)
+        if x1 > x0 and y1 > y0:
+            draw.ellipse([x0, y0, x1, y1], fill=(r, g, b, a))
+
+
+def _draw_scanlines(img, intensity=0.03):
+    """Subtle scanlines for cinematic look."""
+    from PIL import ImageDraw
+    draw = ImageDraw.Draw(img)
+    for y in range(0, HEIGHT, 3):
+        draw.line([(0, y), (WIDTH, y)], fill=(0, 0, 0, int(255 * intensity)))
+
+
+def generate_background_video(duration: float, output_path: str) -> str:
     """
+    Generate animated background using Pillow frames piped to FFmpeg.
+    Creates floating particles, glowing orbs, and animated gradients.
+    """
+    from PIL import Image
+
+    log.info("Generating animated background (Pillow → FFmpeg pipe)...")
+
+    # Initialize particles and orbs
+    n_particles = 80
+    n_orbs = 5
+    particles = [Particle(WIDTH, HEIGHT) for _ in range(n_particles)]
+    orbs = [GlowOrb(WIDTH, HEIGHT) for _ in range(n_orbs)]
+
+    total_frames = int(duration * FPS)
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-f", "rawvideo", "-pix_fmt", "rgba",
+        "-s", f"{WIDTH}x{HEIGHT}", "-r", str(FPS),
+        "-i", "pipe:0",
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+        "-pix_fmt", "yuv420p",
+        output_path
+    ]
+
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    try:
+        for frame_idx in range(total_frames):
+            t = frame_idx / FPS
+
+            # Create RGBA frame
+            img = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 255))
+
+            # 1. Animated gradient background
+            _draw_gradient_bg(img, t)
+
+            # 2. Update and draw particles
+            for p in particles:
+                p.update(1.0 / FPS)
+                if not p.alive():
+                    # Respawn
+                    particles[particles.index(p)] = Particle(WIDTH, HEIGHT)
+
+            # 3. Draw orbs (gentle pulsing glow)
+            _draw_particles_on_frame(img, particles, orbs, t)
+
+            # 4. Subtle scanlines
+            _draw_scanlines(img, 0.02)
+
+            # 5. Vignette (dark edges)
+            _draw_vignette(img)
+
+            # Convert RGBA → RGB for FFmpeg
+            rgb_img = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
+            rgb_img.paste(img, mask=img.split()[3] if img.mode == 'RGBA' else None)
+
+            # Write raw RGB to FFmpeg stdin
+            proc.stdin.write(rgb_img.tobytes())
+
+            if frame_idx % (FPS * 2) == 0:
+                log.info(f"  Background: {frame_idx}/{total_frames} frames ({int(t)}s)")
+
+        proc.stdin.close()
+        proc.wait(timeout=60)
+
+        if proc.returncode == 0:
+            log.info(f"Background video generated: {output_path}")
+            return output_path
+        else:
+            err = proc.stderr.read().decode() if proc.stderr else "Unknown error"
+            log.warning(f"FFmpeg background failed: {err[:200]}")
+            return ""
+    except Exception as e:
+        log.warning(f"Background generation failed: {e}")
+        proc.kill()
+        return ""
+
+
+# ══════════════════════════════════════════════════════════════════
+#  ASS KARAOKE SUBTITLE GENERATOR
+# ══════════════════════════════════════════════════════════════════
+
+def _format_ass_time(seconds):
+    """Format seconds to ASS time (H:MM:SS.cc)."""
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = int(seconds % 60)
+    cs = int((seconds % 1) * 100)
+    return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
+
+
+def generate_ass_subtitles(script: str, audio_duration: float, output_path: str) -> str:
+    """
+    Generate ASS subtitles with CapCut-style karaoke effects.
+    - Word-by-word highlighting (\kf tags)
+    - Bounce/pop animation on each phrase
+    - Glow outline on text
+    - Persistent channel name watermark
+    """
+    # Split script into short phrases (2-5 words each)
     words = script.split()
-    if not words:
-        return output_path
-
-    # Split into phrases (2-4 words each for readability)
     phrases = []
-    chunk_size = random.choice([2, 3, 4])
-    for i in range(0, len(words), chunk_size):
-        phrases.append(" ".join(words[i:i + chunk_size]))
+    current = []
+    for w in words:
+        current.append(w)
+        if len(current) >= random.randint(2, 4) or w.endswith(('.', '!', '?')):
+            phrases.append(' '.join(current))
+            current = []
+    if current:
+        phrases.append(' '.join(current))
 
-    # Calculate timing per phrase
-    total_words = len(words)
-    word_duration = audio_duration / total_words
-    current_time = 0.0
+    n_phrases = len(phrases)
+    phrase_duration = audio_duration / n_phrases if n_phrases > 0 else audio_duration
 
     # ASS header
-    ass_content = f"""[Script Info]
-Title: MindRank Kinetic Captions
+    ass_content = """[Script Info]
 ScriptType: v4.00+
-PlayResX: {WIDTH}
-PlayResY: {HEIGHT}
+PlayResX: 1080
+PlayResY: 1920
 WrapStyle: 0
-ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Karaoke,Arial Black,90,&H00FFFFFF,&H0000D4FF,&H00000000,&H80000000,1,0,0,0,100,100,2,0,1,4,0,5,10,10,120,1
-Style: Hook,Arial Black,100,&H0000D4FF,&H00FFFFFF,&H00000000,&H80000000,1,0,0,0,100,100,3,0,1,5,0,5,10,10,100,1
-Style: Channel,Arial,50,&H0000D4FF,&H00FFFFFF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,0,8,10,10,80,1
+Style: Karaoke,Arial,80,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,2,0,1,4,2,5,60,60,120,1
+Style: Channel,Arial,36,&H00D4FFFF,&H000000FF,&H00000000,&H80000000,0,0,0,0,100,100,0,0,1,2,0,7,60,60,30,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
-    # Add channel name watermark (persistent)
-    ass_content += "Dialogue: 1,0:00:00.00,%s,Channel,,0,0,0,,{\\fad(500,500)}MindRank\n" % _format_ass_time(audio_duration)
 
-    # Add karaoke phrases
-    for phrase in phrases:
+    for i, phrase in enumerate(phrases):
+        start_time = i * phrase_duration
+        end_time = min((i + 1) * phrase_duration, audio_duration)
         phrase_words = phrase.split()
-        phrase_duration = len(phrase_words) * word_duration
-        start_time = current_time
-        end_time = current_time + phrase_duration
+        word_duration = (end_time - start_time) / len(phrase_words) if phrase_words else 0.1
 
         # Build karaoke text with \kf tags for progressive fill
         karaoke_parts = []
@@ -119,20 +371,28 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         karaoke_text = " ".join(karaoke_parts)
 
-        # Add bounce effect on phrase entry (ASS uses single braces, backslash-escaped)
+        # Bounce effect on phrase entry (ASS uses single braces, backslash-escaped)
         bounce_effect = (
             "{\\fscx80\\fscy80}"
             "{\\t(0,150,\\fscx105\\fscy105)}"
             "{\\t(150,300,\\fscx100\\fscy100)}"
         )
 
-        ass_line = (
-            f"Dialogue: 0,{_format_ass_time(start_time)},{_format_ass_time(end_time)},"
-            f"Karaoke,,0,0,0,,{bounce_effect}{karaoke_text}"
-        )
-        ass_content += ass_line + "\n"
-        current_time = end_time
+        # Glow outline effect
+        glow_effect = "{\\4c&H00D4FF&\\4a&H40&}"
 
+        # Combine: glow + bounce + karaoke text
+        dialogue_text = glow_effect + bounce_effect + karaoke_text
+
+        start_str = _format_ass_time(start_time)
+        end_str = _format_ass_time(end_time)
+
+        ass_content += f"Dialogue: 0,{start_str},{end_str},Karaoke,,0,0,0,,{dialogue_text}\n"
+
+    # Add channel name watermark (persistent)
+    ass_content += "Dialogue: 1,0:00:00.00,%s,Channel,,0,0,0,,{\\fad(500,500)}MindRank\n" % _format_ass_time(audio_duration)
+
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(ass_content)
 
@@ -140,143 +400,65 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return output_path
 
 
-def _format_ass_time(seconds: float) -> str:
-    """Convert seconds to ASS time format (H:MM:SS.CC)."""
-    h = int(seconds // 3600)
-    m = int((seconds % 3600) // 60)
-    s = int(seconds % 60)
-    cs = int((seconds % 1) * 100)
-    return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
-
-
 # ══════════════════════════════════════════════════════════════════
-#  HOOK TEXT GENERATOR (First 3 seconds attention grabber)
+#  HOOK FRAME GENERATOR (First 2-3 seconds eye-catching)
 # ══════════════════════════════════════════════════════════════════
 
-def generate_hook_frame(
-    hook_text: str,
-    frame_num: int,
-    total_frames: int,
-    output_path: str,
-):
-    """
-    Generate a dramatic hook frame for the first 2-3 seconds.
-    Large bold text with glow effect on dark background.
-    """
+def generate_hook_frame(title: str, output_path: str) -> str:
+    """Generate an eye-catching hook frame for the first 2-3 seconds."""
     from PIL import Image, ImageDraw, ImageFilter
 
-    img = Image.new("RGB", (WIDTH, HEIGHT), BG_DARK)
+    img = Image.new("RGB", (WIDTH, HEIGHT), (5, 5, 12))
     draw = ImageDraw.Draw(img)
 
-    # Dark radial gradient background
+    # Animated gradient
     for y in range(HEIGHT):
-        dist = abs(y - HEIGHT // 2) / (HEIGHT // 2)
-        r = int(10 + 15 * (1 - dist))
-        g = int(8 + 5 * (1 - dist))
-        b = int(20 + 30 * (1 - dist))
+        ratio = y / HEIGHT
+        r = int(8 + 25 * math.sin(ratio * 3))
+        g = int(5 + 15 * ratio)
+        b = int(20 + 40 * (1 - ratio))
         draw.line([(0, y), (WIDTH, y)], fill=(r, g, b))
 
-    # Glow circles in background
-    for _ in range(3):
-        cx = random.randint(WIDTH // 4, 3 * WIDTH // 4)
-        cy = random.randint(HEIGHT // 4, 3 * HEIGHT // 4)
-        for radius in range(200, 0, -5):
-            alpha = int(30 * (1 - radius / 200))
-            color = (0, alpha, int(alpha * 1.2))
-            draw.ellipse([cx - radius, cy - radius, cx + radius, cy + radius],
-                        outline=color, width=1)
+    # Glowing accent circles
+    for _ in range(6):
+        cx = random.randint(100, WIDTH - 100)
+        cy = random.randint(200, HEIGHT - 200)
+        radius = random.randint(80, 160)
+        color = random.choice([ACCENT_CYAN, ACCENT_PURPLE])
+        r, g, b = color
+        for i in range(radius, 0, -3):
+            alpha = int(35 * (1 - i / radius) ** 2)
+            if alpha < 1:
+                continue
+            draw.ellipse([cx - i, cy - i, cx + i, cy + i], fill=(r, g, b))
 
-    # Bold hook text
-    font_size = 95
-    font = get_font(font_size, bold=True)
+    # Big impact title
+    font = get_font(90, bold=True)
+    title_upper = title.upper()
+    lines = textwrap.wrap(title_upper, width=16)
+    total_h = len(lines) * 105
+    ty = (HEIGHT - total_h) // 2
 
-    # Word wrap
-    words = hook_text.upper().split()
-    lines = []
-    current_line = []
-    for word in words:
-        test_line = " ".join(current_line + [word])
-        bbox = draw.textbbox((0, 0), test_line, font=font)
-        if bbox[2] - bbox[0] > WIDTH - 120:
-            lines.append(" ".join(current_line))
-            current_line = [word]
-        else:
-            current_line.append(word)
-    if current_line:
-        lines.append(" ".join(current_line))
-
-    # Draw text with glow
-    total_h = len(lines) * (font_size + 20)
-    start_y = (HEIGHT - total_h) // 2
-
-    for idx, line in enumerate(lines[:4]):
+    for line in lines[:4]:
         bbox = draw.textbbox((0, 0), line, font=font)
         tx = (WIDTH - (bbox[2] - bbox[0])) // 2
-        ty = start_y + idx * (font_size + 20)
-
-        # Glow layers
+        # Glow
         glow_img = Image.new("RGB", (WIDTH, HEIGHT), (0, 0, 0))
         glow_draw = ImageDraw.Draw(glow_img)
         glow_draw.text((tx, ty), line, font=font, fill=ACCENT_CYAN)
         glow_img = glow_img.filter(ImageFilter.GaussianBlur(15))
         img = Image.blend(img, glow_img, 0.4)
-
         draw = ImageDraw.Draw(img)
-        # Main text
+        # Outline
+        for dx in range(-3, 4):
+            for dy in range(-3, 4):
+                draw.text((tx + dx, ty + dy), line, font=font, fill=(0, 0, 0))
         draw.text((tx, ty), line, font=font, fill=(255, 255, 255))
-
-    # "SUBSCRIBE" pulse at bottom
-    sub_font = get_font(40, bold=True)
-    sub_text = "▶ SUBSCRIBE"
-    bbox = draw.textbbox((0, 0), sub_text, font=sub_font)
-    sx = (WIDTH - (bbox[2] - bbox[0])) // 2
-    sy = HEIGHT - 200
-    draw.rounded_rectangle([sx - 20, sy - 10, sx + (bbox[2] - bbox[0]) + 20, sy + (bbox[3] - bbox[1]) + 10],
-                           radius=16, fill=ACCENT_RED)
-    draw.text((sx, sy), sub_text, font=sub_font, fill=(255, 255, 255))
+        ty += 105
 
     img.save(output_path, "PNG")
+    log.info(f"Hook frame saved: {output_path}")
     return output_path
-
-
-# ══════════════════════════════════════════════════════════════════
-#  BACKGROUND VIDEO GENERATOR (Dark animated gradient)
-# ══════════════════════════════════════════════════════════════════
-
-def generate_background_video(duration: float, output_path: str) -> str:
-    """
-    Generate a dark animated background using FFmpeg filters.
-    Creates a subtle moving gradient with particle-like effects.
-    """
-    cmd = [
-        "ffmpeg", "-y",
-        "-f", "lavfi", "-i",
-        f"color=c=0x0A0A0F:s={WIDTH}x{HEIGHT}:d={duration}:r={FPS}",
-        "-vf",
-        (
-            # Animated gradient overlay
-            f"drawbox=x=0:y=0:w={WIDTH}:h={HEIGHT}:"
-            f"color=0x0D1117@0.3:t=fill,"
-            # Subtle moving glow circles
-            f"drawtext=text='●':fontsize=200:fontcolor=0x00D4FF@0.05:"
-            f"x='mod(t*30,{WIDTH})':y='h/2+100*sin(t*0.5)',"
-            f"drawtext=text='●':fontsize=150:fontcolor=0x7B2FBE@0.05:"
-            f"x='mod(t*20+400,{WIDTH})':y='h/2+80*cos(t*0.7)',"
-            # Vignette effect
-            f"vignette=PI/4"
-        ),
-        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
-        "-pix_fmt", "yuv420p",
-        output_path
-    ]
-
-    try:
-        subprocess.run(cmd, capture_output=True, timeout=120, check=True)
-        log.info(f"Background video generated: {output_path}")
-        return output_path
-    except Exception as e:
-        log.warning(f"Background generation failed: {e}")
-        return ""
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -284,7 +466,7 @@ def generate_background_video(duration: float, output_path: str) -> str:
 # ══════════════════════════════════════════════════════════════════
 
 def generate_thumbnail(script_data: dict, output_path: str) -> str:
-    """Generate a viral clickbait thumbnail: high contrast, bold text."""
+    """Generate a viral clickbait thumbnail: high contrast, bold text, dramatic."""
     from PIL import Image, ImageDraw, ImageFilter
 
     thumb_w, thumb_h = 1280, 720
@@ -293,52 +475,74 @@ def generate_thumbnail(script_data: dict, output_path: str) -> str:
 
     title = script_data.get("title", "SECRET Psychology Trick")
 
-    # Dramatic gradient
+    # Dramatic gradient background
     for y in range(thumb_h):
         ratio = y / thumb_h
-        r = int(15 + 40 * ratio)
-        g = int(5 + 10 * ratio)
-        b = int(30 + 50 * (1 - ratio))
+        r = int(12 + 35 * math.sin(ratio * 2.5))
+        g = int(5 + 8 * ratio)
+        b = int(25 + 50 * (1 - ratio))
         draw.line([(0, y), (thumb_w, y)], fill=(r, g, b))
 
-    # Glow accents
-    for _ in range(4):
+    # Big glowing orbs
+    for _ in range(5):
         cx = random.randint(0, thumb_w)
         cy = random.randint(0, thumb_h)
-        for radius in range(150, 0, -3):
-            alpha = int(40 * (1 - radius / 150))
-            color = random.choice([(0, alpha, int(alpha * 1.2)), (alpha, 0, int(alpha * 0.5))])
-            draw.ellipse([cx - radius, cy - radius, cx + radius, cy + radius],
-                        outline=color, width=1)
+        radius = random.randint(100, 200)
+        color = random.choice([ACCENT_CYAN, ACCENT_PURPLE])
+        r, g, b = color
+        for i in range(radius, 0, -3):
+            alpha_factor = (1 - i / radius) ** 1.5
+            a = int(50 * alpha_factor)
+            if a < 1:
+                continue
+            draw.ellipse([cx - i, cy - i, cx + i, cy + i], fill=(r, g, b))
 
-    # Bold title
-    font = get_font(85, bold=True)
-    lines = textwrap.wrap(title.upper(), width=18)
-    total_h = len(lines) * 100
+    # Title text - BIG and impactful
+    font = get_font(95, bold=True)
+    lines = textwrap.wrap(title.upper(), width=16)
+    total_h = len(lines) * 110
     ty = (thumb_h - total_h) // 2
 
     for line in lines[:3]:
         bbox = draw.textbbox((0, 0), line, font=font)
         tx = (thumb_w - (bbox[2] - bbox[0])) // 2
-        # Outline
-        for dx in range(-4, 5):
-            for dy in range(-4, 5):
+        # Thick outline
+        for dx in range(-5, 6):
+            for dy in range(-5, 6):
                 draw.text((tx + dx, ty + dy), line, font=font, fill=(0, 0, 0))
+        # Main text with glow
+        glow_img = Image.new("RGB", (thumb_w, thumb_h), (0, 0, 0))
+        glow_draw = ImageDraw.Draw(glow_img)
+        glow_draw.text((tx, ty), line, font=font, fill=ACCENT_YELLOW)
+        glow_img = glow_img.filter(ImageFilter.GaussianBlur(8))
+        img = Image.blend(img, glow_img, 0.3)
+        draw = ImageDraw.Draw(img)
         draw.text((tx, ty), line, font=font, fill=ACCENT_YELLOW)
-        ty += 100
+        ty += 110
 
-    # Subscribe badge
-    badge_font = get_font(36, bold=True)
+    # Subscribe badge - bigger
+    badge_font = get_font(42, bold=True)
     badge_text = "▶ SUBSCRIBE"
     bbox = draw.textbbox((0, 0), badge_text, font=badge_font)
-    bx = thumb_w - (bbox[2] - bbox[0]) - 40
-    by = thumb_h - (bbox[3] - bbox[1]) - 30
-    draw.rounded_rectangle([bx - 16, by - 8, bx + (bbox[2] - bbox[0]) + 16, by + (bbox[3] - bbox[1]) + 8],
-                           radius=12, fill=ACCENT_RED)
+    bw = bbox[2] - bbox[0]
+    bh = bbox[3] - bbox[1]
+    bx = thumb_w - bw - 50
+    by = thumb_h - bh - 40
+    draw.rounded_rectangle(
+        [bx - 20, by - 12, bx + bw + 20, by + bh + 12],
+        radius=14, fill=ACCENT_RED
+    )
     draw.text((bx, by), badge_text, font=badge_font, fill=(255, 255, 255))
 
     # Channel name
-    logo_font = get_font(48, bold=True)
+    logo_font = get_font(52, bold=True)
+    # Glow behind logo
+    logo_glow = Image.new("RGB", (thumb_w, thumb_h), (0, 0, 0))
+    logo_glow_draw = ImageDraw.Draw(logo_glow)
+    logo_glow_draw.text((30, 30), "MindRank", font=logo_font, fill=ACCENT_CYAN)
+    logo_glow = logo_glow.filter(ImageFilter.GaussianBlur(6))
+    img = Image.blend(img, logo_glow, 0.3)
+    draw = ImageDraw.Draw(img)
     draw.text((30, 30), "MindRank", font=logo_font, fill=ACCENT_CYAN)
 
     img.save(output_path, "JPEG", quality=95)
@@ -347,223 +551,142 @@ def generate_thumbnail(script_data: dict, output_path: str) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════
-#  MAIN VIDEO GENERATION (FFmpeg composition)
+#  MAIN VIDEO COMPOSITION
 # ══════════════════════════════════════════════════════════════════
 
-def generate_video(script_data: dict, audio_path: str, output_path: str) -> bool:
+def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
     """
-    Generate a viral YouTube Short using the kinetic typography format:
-
-    1. Generate ASS subtitles with karaoke highlighting
-    2. Generate dark animated background
-    3. Generate hook frame (first 2-3 seconds)
+    Generate a complete viral short video:
+    1. Animated background (Pillow particles + FFmpeg)
+    2. Hook frame for first 2-3 seconds
+    3. ASS karaoke subtitles
     4. Composite everything with FFmpeg
-
-    This produces videos that look like actual viral faceless shorts,
-    not static images with transitions.
     """
-    os.makedirs("output/slides", exist_ok=True)
-    os.makedirs("output/thumbnails", exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    base = f"video_{timestamp}"
+
+    video_path = os.path.join(output_dir, f"{base}.mp4")
+    thumb_dir = os.path.join(output_dir, "thumbnails")
+    os.makedirs(thumb_dir, exist_ok=True)
+    thumb_path = os.path.join(thumb_dir, f"{base}_thumb.jpg")
 
     # Get audio duration
     try:
-        result = subprocess.run(
-            ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
-             "-of", "csv=p=0", audio_path],
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", audio_path],
             capture_output=True, text=True, timeout=10
         )
-        duration = float(result.stdout.strip())
-    except Exception as e:
-        log.error(f"Cannot get audio duration: {e}")
-        return False
+        audio_duration = float(probe.stdout.strip())
+    except Exception:
+        audio_duration = 25.0
 
-    log.info(f"Audio duration: {duration:.1f}s")
+    log.info(f"Audio duration: {audio_duration:.1f}s")
 
-    script = script_data.get("script", "")
-    hook = script_data.get("hook", "")
-    title = script_data.get("title", "Amazing Facts")
+    # Step 1: Generate animated background
+    bg_path = os.path.join(output_dir, f"{base}_bg.mp4")
+    bg_result = generate_background_video(audio_duration + 2, bg_path)
 
-    # ── Step 1: Generate ASS subtitles ──
-    ass_path = "output/subtitles.ass"
-    generate_ass_subtitles(script, duration, ass_path)
+    if not bg_result:
+        log.warning("Background generation failed, using solid color fallback")
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "lavfi", "-i",
+            f"color=c=0x0A0A0F:s={WIDTH}x{HEIGHT}:d={audio_duration + 2}:r={FPS}",
+            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
+            "-pix_fmt", "yuv420p", bg_path
+        ], capture_output=True, timeout=60)
+        bg_result = bg_path
 
-    # ── Step 2: Generate background video ──
-    bg_path = "output/background.mp4"
-    generate_background_video(duration, bg_path)
+    # Step 2: Generate hook frame overlay
+    hook_path = os.path.join(output_dir, f"{base}_hook.png")
+    title = script_data.get("title", "DID YOU KNOW?")
+    generate_hook_frame(title, hook_path)
 
-    # ── Step 3: Generate hook frame (first 2.5 seconds) ──
-    hook_path = "output/hook_frame.png"
-    generate_hook_frame(hook, 0, FPS * 3, hook_path)
+    # Step 3: Generate ASS subtitles
+    ass_path = os.path.join(output_dir, f"{base}.ass")
+    generate_ass_subtitles(
+        script_data.get("script", ""),
+        audio_duration,
+        ass_path
+    )
 
-    # ── Step 4: Composite with FFmpeg ──
+    # Step 4: Composite everything with FFmpeg
     log.info("Compositing final video with FFmpeg...")
 
-    # Build the FFmpeg command
-    if bg_path and os.path.exists(bg_path):
-        # Use generated background
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", bg_path,          # Background video
-            "-i", audio_path,       # Voiceover
-            "-i", hook_path,        # Hook frame (for intro)
-            "-filter_complex",
-            (
-                # Loop hook frame for first 2.5 seconds
-                f"[2:v]loop=loop=75:size=1:start=0,"
-                f"trim=duration=2.5[hook];"
-
-                # Background starts after hook
-                f"[0:v]trim=start=0:end={duration - 2.5},"
-                f"setpts=PTS-STARTPTS[bg];"
-
-                # Concat hook + background
-                f"[hook][bg]concat=n=2:v=1:a=0[video_base];"
-
-                # Overlay ASS subtitles with karaoke
-                f"[video_base]ass={ass_path}[final]"
-            ),
-            "-map", "[final]",
-            "-map", "1:a",
-            "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-            "-c:a", "aac", "-b:a", "192k",
-            "-pix_fmt", "yuv420p",
-            "-shortest",
-            output_path
-        ]
-    else:
-        # Fallback: solid dark background with ASS subtitles
-        cmd = [
-            "ffmpeg", "-y",
-            "-f", "lavfi", "-i",
-            f"color=c=0x0A0A0F:s={WIDTH}x{HEIGHT}:d={duration}:r={FPS}",
-            "-i", audio_path,
-            "-vf", f"ass={ass_path}",
-            "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-            "-c:a", "aac", "-b:a", "192k",
-            "-pix_fmt", "yuv420p",
-            "-shortest",
-            output_path
-        ]
-
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-        if result.returncode != 0:
-            log.error(f"FFmpeg error: {result.stderr[-500:]}")
-            # Try simpler fallback
-            return _generate_simple_fallback(script_data, audio_path, output_path, duration)
-    except Exception as e:
-        log.error(f"FFmpeg failed: {e}")
-        return _generate_simple_fallback(script_data, audio_path, output_path, duration)
-
-    file_size = os.path.getsize(output_path) / (1024 * 1024)
-    log.info(f"Video done: {output_path} ({file_size:.1f} MB)")
-
-    # Generate thumbnail
-    thumb_path = output_path.replace(".mp4", "_thumb.jpg").replace("output/", "output/thumbnails/")
-    os.makedirs(os.path.dirname(thumb_path), exist_ok=True)
-    generate_thumbnail(script_data, thumb_path)
-
-    return True
-
-
-def _generate_simple_fallback(
-    script_data: dict,
-    audio_path: str,
-    output_path: str,
-    duration: float,
-) -> bool:
-    """
-    Simple fallback: dark background + large centered text + audio.
-    Uses FFmpeg drawtext for word-by-word appearance.
-    """
-    log.info("Using simple fallback video generation...")
-
-    script = script_data.get("script", "")
-    words = script.split()
-    words_per_line = 4
-    lines = []
-    for i in range(0, len(words), words_per_line):
-        lines.append(" ".join(words[i:i + words_per_line]))
-
-    # Build drawtext filter for each line
-    word_duration = duration / max(1, len(words))
-    drawtext_parts = []
-    for i, line in enumerate(lines):
-        start_time = i * words_per_line * word_duration
-        escaped = line.replace("'", "'\\''").replace(":", "\\:")
-        drawtext_parts.append(
-            f"drawtext=text='{escaped}':"
-            f"fontsize=80:fontcolor=white:"
-            f"fontfile={FONT_PATH}:"
-            f"x=(w-tw)/2:y=(h-th)/2:"
-            f"enable='between(t,{start_time:.2f},{start_time + len(line.split()) * word_duration:.2f})':"
-            f"borderw=4:bordercolor=black"
-        )
-
-    filter_str = ",".join(drawtext_parts) if drawtext_parts else f"drawtext=text='MindRank':fontsize=60:fontcolor=white:x=(w-tw)/2:y=(h-th)/2"
+    # Build FFmpeg filter complex
+    # [0:v] = background video
+    # [1:v] = hook frame image (shown for first 2.5 seconds)
+    # [2:a] = audio
+    # ass subtitles burned on top
+    filter_complex = (
+        # Show hook frame for first 2.5s, then fade out
+        f"[1:v]scale={WIDTH}:{HEIGHT},"
+        f"format=rgba,"
+        f"alpha='if(lt(t,2.5),1,max(0,(3.5-t)/1))':format=auto"
+        f"[hook];"
+        # Overlay hook on background
+        f"[0:v][hook]overlay=0:0:format=auto[bg_hook];"
+        # Add vignette for cinematic look
+        f"[bg_hook]vignette=PI/5[vignetted];"
+        # Burn ASS subtitles
+        f"[vignetted]ass={ass_path}[final]"
+    )
 
     cmd = [
         "ffmpeg", "-y",
-        "-f", "lavfi", "-i",
-        f"color=c=0x0A0A0F:s={WIDTH}x{HEIGHT}:d={duration}:r={FPS}",
-        "-i", audio_path,
-        "-vf", filter_str,
-        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+        "-i", bg_result,       # background video
+        "-i", hook_path,        # hook frame
+        "-i", audio_path,       # audio
+        "-filter_complex", filter_complex,
+        "-map", "[final]",
+        "-map", "2:a",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "23",
         "-c:a", "aac", "-b:a", "128k",
         "-pix_fmt", "yuv420p",
         "-shortest",
-        output_path
+        "-movflags", "+faststart",
+        video_path
     ]
 
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-        if result.returncode != 0:
-            log.error(f"Fallback FFmpeg error: {result.stderr[-300:]}")
-            return False
-    except Exception as e:
-        log.error(f"Fallback failed: {e}")
-        return False
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
 
-    file_size = os.path.getsize(output_path) / (1024 * 1024)
-    log.info(f"Fallback video done: {output_path} ({file_size:.1f} MB)")
-    return True
+    if result.returncode == 0:
+        size_mb = os.path.getsize(video_path) / (1024 * 1024)
+        log.info(f"Video done: {video_path} ({size_mb:.1f} MB)")
+    else:
+        log.error(f"FFmpeg composite failed: {result.stderr[:500]}")
+        # Fallback: simple composite without hook frame
+        log.info("Trying fallback: simple background + audio + subtitles")
+        cmd_simple = [
+            "ffmpeg", "-y",
+            "-i", bg_result,
+            "-i", audio_path,
+            "-filter_complex",
+            f"[0:v]vignette=PI/5,ass={ass_path}[final]",
+            "-map", "[final]", "-map", "1:a",
+            "-c:v", "libx264", "-preset", "medium", "-crf", "23",
+            "-c:a", "aac", "-b:a", "128k",
+            "-pix_fmt", "yuv420p",
+            "-shortest",
+            "-movflags", "+faststart",
+            video_path
+        ]
+        result2 = subprocess.run(cmd_simple, capture_output=True, text=True, timeout=180)
+        if result2.returncode != 0:
+            log.error(f"Fallback also failed: {result2.stderr[:300]}")
+            return ""
+        size_mb = os.path.getsize(video_path) / (1024 * 1024)
+        log.info(f"Video done (fallback): {video_path} ({size_mb:.1f} MB)")
 
+    # Step 5: Generate thumbnail
+    generate_thumbnail(script_data, thumb_path)
 
-# ══════════════════════════════════════════════════════════════════
-#  SCENE BUILDER (for compatibility with main.py)
-# ══════════════════════════════════════════════════════════════════
+    # Cleanup temp files
+    for f in [bg_path, hook_path]:
+        try:
+            os.remove(f)
+        except OSError:
+            pass
 
-def build_scenes_viral(script_data: dict) -> list:
-    """Build scenes for compatibility with existing pipeline."""
-    script = script_data.get("script", "")
-    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', script) if len(s.strip()) > 10]
-    scenes = []
-    for i, sent in enumerate(sentences):
-        scenes.append({
-            "section": f"Part {i + 1}",
-            "narration": sent,
-            "image_prompt": f"dramatic dark {sent[:40]}",
-            "style": "dark",
-        })
-    return scenes
-
-
-# ══════════════════════════════════════════════════════════════════
-#  AI IMAGE GENERATOR (kept for compatibility)
-# ══════════════════════════════════════════════════════════════════
-
-def generate_ai_image_cinematic(scene_description: str, style: str = "cinematic"):
-    """Kept for compatibility. Not used in kinetic typography mode."""
-    return None
-
-
-def create_dramatic_fallback(scene_num: int, narration: str, title: str):
-    """Kept for compatibility."""
-    from PIL import Image
-    return Image.new("RGB", (WIDTH, HEIGHT), BG_DARK)
-
-
-def compose_frame_viral(*args, **kwargs):
-    """Kept for compatibility."""
-    from PIL import Image
-    return Image.new("RGB", (WIDTH, HEIGHT), BG_DARK)
+    return video_path
