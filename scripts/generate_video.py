@@ -231,9 +231,12 @@ def build_scenes(script_data):
 
 def generate_video(script_data, audio_path, output_path):
     try:
-        from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
+        try:
+            from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
+        except (ImportError, ModuleNotFoundError):
+            from moviepy import ImageClip, AudioFileClip, concatenate_videoclips
     except ImportError:
-        log.error("Run: pip install moviepy==1.0.3")
+        log.error("moviepy not available. Install: pip install moviepy==1.0.3")
         return False
 
     os.makedirs("output/slides", exist_ok=True)

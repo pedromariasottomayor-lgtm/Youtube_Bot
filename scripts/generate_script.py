@@ -136,53 +136,69 @@ def generate_script(topic: str) -> Optional[Dict]:
 
 # ─── OFFLINE FALLBACK ────────────────────────────────────────────
 def generate_script_offline(topic: str) -> dict:
-    """Generate a better offline script with topic-specific content."""
+    """Generate topic-specific offline scripts with varied templates."""
     
-    # Topic-specific script templates
-    templates = {
-        "psychology": [
-            f"Did you know that {topic.lower()} is one of the most fascinating discoveries in psychology? "
-            "Scientists have spent decades studying this phenomenon, and what they found will change how you see the world. "
-            "Your brain does things you never noticed, and this is one of them. "
-            "The way we think, feel, and behave is controlled by hidden patterns that most people never discover. "
-            "Understanding these patterns gives you power over your own mind. "
-            "Most people go through life without ever realizing how their brain truly works. "
-            "But today, we're pulling back the curtain on one of psychology's most shocking secrets. "
-            "Stay until the end because the final revelation will blow your mind. "
-            "If you found this fascinating, smash that like button and subscribe to MindRank "
-            "for more incredible psychological insights every single day!",
+    # Multiple script template patterns — topic gets woven into each
+    hooks = [
+        f"What nobody tells you about {topic.lower()} will change everything.",
+        f"The real truth about {topic.lower()} is far darker than you think.",
+        f"You've been lied to about {topic.lower()} your entire life.",
+        f"Scientists just discovered something terrifying about {topic.lower()}.",
+        f"This is why {topic.lower()} is more dangerous than you realize.",
+        f"The hidden secret behind {topic.lower()} that nobody wants you to know.",
+        f"What happens when you study {topic.lower()} for 10,000 hours? This.",
+        f"99% of people have no idea how {topic.lower()} actually works.",
+    ]
+    
+    bodies = [
+        [
+            f"Most people think they understand {topic.lower()}, but they're completely wrong.",
+            "The research is clear, and the results will shock you.",
+            "Your brain is designed to hide this truth from you.",
+            "Every day, millions of people fall for this without even knowing it.",
+            "The patterns are there, but only the smartest people can see them.",
+            "Once you learn this, you can never go back to how things were before.",
         ],
-        "default": [
-            f"Here's something absolutely incredible about {topic.lower()} that most people never realize. "
-            "The truth is far more surprising than you could ever imagine. "
-            "Scientists have been studying this for years, and the results are mind-blowing. "
-            "What you're about to learn will completely change your perspective on the world. "
-            "Most people walk around every day without knowing this fascinating truth. "
-            "But once you understand it, you'll start seeing it everywhere. "
-            "The human brain is an amazing machine, and what it does with this information is extraordinary. "
-            "Watch until the end because the last fact is the most shocking of all. "
-            "If you enjoyed this, hit subscribe to MindRank for daily mind-blowing facts!",
+        [
+            f"Here's the thing about {topic.lower()} that experts won't tell you.",
+            "It's not what you learned in school, and it's definitely not what the media says.",
+            "The studies that proved this were buried for years.",
+            "Your intuition is screaming at you to pay attention right now.",
+            "This knowledge has been hidden in plain sight for decades.",
+            "The final piece of this puzzle will blow your mind wide open.",
         ],
-    }
+        [
+            f"{topic.title()} is one of the most misunderstood things in the world.",
+            "Researchers spent 20 years studying this, and here's what they found.",
+            "The human mind is a beautifully terrifying machine.",
+            "Every choice you make is influenced by this one thing.",
+            "The smartest people in the world use this knowledge every single day.",
+            "Stay until the end because the last fact changes everything.",
+        ],
+    ]
     
-    # Pick template based on keywords
-    template_key = "default"
-    psych_keywords = ["psychology", "brain", "mind", "behavior", "emotion", "fear", "anxiety", 
-                      "relationship", "personality", "manipulation", "body language", "cognitive"]
-    for kw in psych_keywords:
-        if kw in topic.lower():
-            template_key = "psychology"
-            break
+    closers = [
+        "If this blew your mind, smash that like button and subscribe to MindRank for daily insights that will change how you see the world!",
+        "Like and subscribe to MindRank right now, because we drop these mind-blowing facts every single day!",
+        "Hit subscribe to MindRank if you want to understand the hidden side of human behavior. See you tomorrow!",
+        "Don't forget to subscribe to MindRank. We expose the truth about human psychology every single day!",
+    ]
     
-    script_text = " ".join(templates[template_key])
+    hook = random.choice(hooks)
+    body = random.choice(bodies)
+    closer = random.choice(closers)
+    script_text = hook + " " + " ".join(body) + " " + closer
     
     # Generate SEO-friendly title
     power_words = ["Secret", "Dark Truth", "Nobody Tells You", "Shocking", "Mind-Blowing", 
-                   "Hidden", "Exposed", "Psychology", "Why", "How"]
+                   "Hidden", "Exposed", "The Real Truth", "Why", "How"]
     title_word = random.choice(power_words)
     title = f"{title_word}: {topic}"
     if len(title) > 60:
         title = topic[:57] + "..."
+    
+    # Extract topic words for tags
+    topic_words = [w for w in topic.lower().split() if len(w) > 3][:3]
     
     return {
         "title": title,
@@ -192,9 +208,8 @@ def generate_script_offline(topic: str) -> dict:
             f"We explore the hidden psychology behind human behavior that nobody talks about. "
             f"#psychology #mindrank #facts #humanbehavior #mindblown #shorts"
         ),
-        "tags": ["psychology", "facts", "mindblown", "humanbehavior", "mindrank", 
-                 topic.lower().split()[0], topic.lower().split()[-1]],
-        "hook": f"Here's something incredible about {topic.lower()} that most people never realize",
+        "tags": ["psychology", "facts", "mindblown", "humanbehavior", "mindrank"] + topic_words,
+        "hook": hook,
         "sections": ["The Hidden Truth", "Why It Matters", "The Mind-Blowing Conclusion"]
     }
 
