@@ -561,13 +561,23 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
     2. Hook frame for first 2-3 seconds
     3. ASS karaoke subtitles
     4. Composite everything with FFmpeg
-    """
-    os.makedirs(output_dir, exist_ok=True)
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    base = f"video_{timestamp}"
 
-    video_path = os.path.join(output_dir, f"{base}.mp4")
-    thumb_dir = os.path.join(output_dir, "thumbnails")
+    output_dir can be either a directory path or a full video file path.
+    """
+    # Handle both file path and directory path
+    if output_dir.endswith(".mp4"):
+        video_path = output_dir
+        work_dir = os.path.dirname(video_path) or "."
+    else:
+        work_dir = output_dir
+        os.makedirs(work_dir, exist_ok=True)
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        video_path = os.path.join(work_dir, f"video_{timestamp}.mp4")
+
+    os.makedirs(work_dir, exist_ok=True)
+    base = os.path.splitext(os.path.basename(video_path))[0]
+
+    thumb_dir = os.path.join(work_dir, "thumbnails")
     os.makedirs(thumb_dir, exist_ok=True)
     thumb_path = os.path.join(thumb_dir, f"{base}_thumb.jpg")
 
@@ -585,7 +595,7 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
     log.info(f"Audio duration: {audio_duration:.1f}s")
 
     # Step 1: Generate animated background
-    bg_path = os.path.join(output_dir, f"{base}_bg.mp4")
+    bg_path = os.path.join(work_dir, f"{base}_bg.mp4")
     bg_result = generate_background_video(audio_duration + 2, bg_path)
 
     if not bg_result:
@@ -599,12 +609,12 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
         bg_result = bg_path
 
     # Step 2: Generate hook frame overlay
-    hook_path = os.path.join(output_dir, f"{base}_hook.png")
+    hook_path = os.path.join(work_dir, f"{base}_hook.png")
     title = script_data.get("title", "DID YOU KNOW?")
     generate_hook_frame(title, hook_path)
 
     # Step 3: Generate ASS subtitles
-    ass_path = os.path.join(output_dir, f"{base}.ass")
+    ass_path = os.path.join(work_dir, f"{base}.ass")
     generate_ass_subtitles(
         script_data.get("script", ""),
         audio_duration,
@@ -620,13 +630,14 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
     # [2:a] = audio
     # ass subtitles burned on top
     filter_complex = (
-        # Show hook frame for first 2.5s, then fade out
+        # Show hook frame for first 2.5s with fade out
         f"[1:v]scale={WIDTH}:{HEIGHT},"
         f"format=rgba,"
-        f"alpha='if(lt(t,2.5),1,max(0,(3.5-t)/1))':format=auto"
+        f"fade=t=in:st=0:d=0.5,"
+        f"fade=t=out:st=2.0:d=1.0"
         f"[hook];"
-        # Overlay hook on background
-        f"[0:v][hook]overlay=0:0:format=auto[bg_hook];"
+        # Overlay hook on background (visible for ~3 seconds)
+        f"[0:v][hook]overlay=0:0:enable='between(t,0,3)'[bg_hook];"
         # Add vignette for cinematic look
         f"[bg_hook]vignette=PI/5[vignetted];"
         # Burn ASS subtitles
