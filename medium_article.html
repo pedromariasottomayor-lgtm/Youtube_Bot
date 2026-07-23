@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>I Built a Bot That Uploads YouTube Shorts Every Day For Free</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf9f7;
+    --text: #1a1a1a;
+    --muted: #6b6b6b;
+    --border: #e8e6e0;
+    --accent: #ff2d4a;
+    --accent2: #1a1a1a;
+    --surface: #f2f0eb;
+    --code-bg: #f5f3ee;
+    --highlight: #fff8e1;
+    --green: #1a7a4a;
+    --blue: #0052cc;
+    --amber: #b45309;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Sans 3', sans-serif;
+    line-height: 1.7;
+    font-size: 17px;
+  }
+
+  /* MEDIUM-STYLE HEADER */
+  .pub-header {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+
+  .pub-logo {
+    font-family: 'Lora', serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .pub-logo span { color: var(--accent); }
+
+  .pub-tag {
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-left: auto;
+  }
+
+  /* HERO */
+  .hero-section {
+    background: var(--text);
+    color: white;
+    padding: 80px 32px 60px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 40px,
+      rgba(255,255,255,0.015) 40px,
+      rgba(255,255,255,0.015) 41px
+    );
+  }
+
+  .hero-kicker {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 4px;
+    margin-bottom: 24px;
+  }
+
+  .hero-title {
+    font-family: 'Lora', serif;
+    font-size: clamp(2rem, 5vw, 3.6rem);
+    font-weight: 700;
+    line-height: 1.15;
+    max-width: 760px;
+    margin: 0 auto 20px;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-title em { color: #ff7088; font-style: normal; }
+
+  .hero-subtitle {
+    font-size: 1.15rem;
+    color: rgba(255,255,255,0.65);
+    max-width: 600px;
+    margin: 0 auto 32px;
+    font-weight: 300;
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #ff7088;
+    display: block;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ARTICLE BODY */
+  .article-wrapper {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 56px 32px 80px;
+  }
+
+  .byline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #ff8c00);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .byline-text .author {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  .byline-text .meta {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .read-time {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--surface);
+    padding: 4px 12px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  /* BODY TEXT */
+  p {
+    margin-bottom: 24px;
+    color: #2a2a2a;
+    line-height: 1.8;
+  }
+
+  h2 {
+    font-family: 'Lora', serif;
+    font-size: 1.7rem;
+    font-weight: 700;
+    margin: 56px 0 20px;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 36px 0 14px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  /* PULL QUOTE */
+  .pull-quote {
+    margin: 40px -20px;
+    padding: 28px 32px;
+    border-left: 4px solid var(--accent);
+    background: var(--surface);
+    font-family: 'Lora', serif;
+    font-size: 1.25rem;
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--text);
+    border-radius: 0 8px 8px 0;
+  }
+
+  .pull-quote strong { color: var(--accent); font-style: normal; }
+
+  /* CALLOUT BOX */
+  .callout {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 32px 0;
+    background: var(--highlight);
+    border-left: 4px solid #f59e0b;
+  }
+
+  .callout-title {
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+    margin-bottom: 8px;
+  }
+
+  .callout p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #4a3500;
+  }
+
+  /* CODE BLOCKS */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    overflow-x: auto;
+    margin: 28px 0;
+    position: relative;
+  }
+
+  pre code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.75;
+    color: #2a2a2a;
+  }
+
+  code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.85em;
+    background: #eeecea;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: #c41230;
+  }
+
+  pre code { background: none; border: none; padding: 0; color: inherit; }
+
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'SF Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.2s;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .copy-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+  .copy-btn.ok { background: var(--green); color: white; border-color: var(--green); }
+
+  /* SYNTAX */
+  .kw { color: #7c3aed; font-weight: 600; }
+  .str { color: #15803d; }
+  .cm { color: #9ca3af; font-style: italic; }
+  .fn { color: #0284c7; }
+  .num { color: #d97706; }
+  .var { color: #b45309; }
+
+  /* DIAGRAM CARD */
+  .diagram-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px 24px 24px;
+    margin: 36px -16px;
+    overflow-x: auto;
+  }
+
+  .diagram-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  /* COMPARISON TABLE */
+  .comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.9rem;
+  }
+
+  .comparison-table th {
+    text-align: left;
+    padding: 10px 16px;
+    background: var(--text);
+    color: white;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .comparison-table th:first-child { border-radius: 8px 0 0 0; }
+  .comparison-table th:last-child { border-radius: 0 8px 0 0; }
+
+  .comparison-table td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    color: #2a2a2a;
+  }
+
+  .comparison-table tr:last-child td { border-bottom: none; }
+  .comparison-table tr:nth-child(even) td { background: var(--surface); }
+  .comparison-table .yes { color: var(--green); font-weight: 700; }
+  .comparison-table .free { color: var(--green); font-weight: 700; }
+
+  /* STEP SECTION */
+  .numbered-step {
+    display: flex;
+    gap: 20px;
+    margin: 24px 0;
+    align-items: flex-start;
+  }
+
+  .step-number {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--text);
+    color: white;
+    font-family: 'Lora', serif;
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  .step-body h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .step-body p {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* FREE TIER TABLE */
+  .free-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.88rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .free-table th {
+    background: var(--surface);
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .free-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+
+  .free-table tr:last-child td { border-bottom: none; }
+  .tick { color: var(--green); font-weight: 700; }
+  .safe-text { color: var(--green); font-weight: 600; font-size: 12px; }
+
+  /* HERO FLOW SVG WRAPPER */
+  .svg-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  /* LINK STYLE */
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* GITHUB CTA */
+  .github-cta {
+    background: var(--text);
+    color: white;
+    border-radius: 14px;
+    padding: 32px;
+    margin: 48px 0;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .github-icon {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+
+  .github-cta h4 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+  }
+
+  .github-cta p {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.6);
+    margin: 0;
+  }
+
+  .github-btn {
+    margin-left: auto;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s;
+    display: inline-block;
+  }
+
+  .github-btn:hover { background: #e0002a; text-decoration: none; color: white; }
+
+  /* CONCLUSION SECTION */
+  .outro-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    margin: 48px 0;
+    text-align: center;
+  }
+
+  .outro-box h3 { margin: 0 0 12px; font-family: 'Lora', serif; font-size: 1.3rem; }
+  .outro-box p { margin: 0 0 20px; font-size: 0.95rem; color: var(--muted); }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .tag {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tag:hover { background: var(--text); color: white; border-color: var(--text); }
+
+  ul {
+    padding-left: 24px;
+    margin-bottom: 20px;
+    color: #2a2a2a;
+    line-height: 1.85;
+  }
+
+  li { margin-bottom: 6px; }
+
+  @media (max-width: 600px) {
+    .hero-section { padding: 48px 20px 40px; }
+    .article-wrapper { padding: 32px 20px 60px; }
+    .diagram-card { margin: 24px -8px; padding: 20px 12px; }
+    .github-cta { flex-direction: column; gap: 16px; }
+    .github-btn { margin-left: 0; width: 100%; text-align: center; }
+    .pull-quote { margin: 32px 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="pub-header">
+  <div class="pub-logo">Medium<span>.</span></div>
+  <span class="pub-tag">Python · AI Automation · YouTube</span>
+</div>
+
+<!-- HERO -->
+<div class="hero-section">
+  <div class="hero-kicker">🔥 Viral Build of the Month</div>
+  <h1 class="hero-title">I Built a Bot That Uploads YouTube Shorts <em>Every Single Day</em> — For Absolutely Free</h1>
+  <p class="hero-subtitle">Zero manual work. Zero server costs. Fully automated AI-powered content creation using Python, Google Gemini, and GitHub Actions.</p>
+
+  <div class="hero-stats">
+    <div class="stat-item">
+      <span class="stat-num">$0</span>
+      <span class="stat-label">Monthly Cost</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">4</span>
+      <span class="stat-label">AI Tools Used</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">100%</span>
+      <span class="stat-label">Automated</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">∞</span>
+      <span class="stat-label">Free Forever</span>
+    </div>
+  </div>
+</div>
+
+<!-- ARTICLE BODY -->
+<div class="article-wrapper">
+
+  <!-- BYLINE -->
+  <div class="byline">
+    <div class="avatar">J</div>
+    <div class="byline-text">
+      <div class="author">Jayvardhan</div>
+      <div class="meta">Mar 2025 · Python Developer & Automation Builder</div>
+    </div>
+    <div class="read-time">⏱ 10 min read</div>
+  </div>
+
+  <!-- INTRO -->
+  <p>
+    What if I told you that while you're sleeping, a bot is writing a script, recording a voiceover, creating an AI-illustrated video, and uploading it to YouTube — without you lifting a finger? And it costs <strong>absolutely nothing to run</strong>?
+  </p>
+
+  <p>
+    That's exactly what I built. This is the full story of how I created a fully automated YouTube Shorts pipeline using Python, Google Gemini AI, Microsoft Edge TTS, and GitHub Actions — and how <strong>you can copy the exact same system</strong> for your own channel.
+  </p>
+
+  <div class="pull-quote">
+    "Most people spend hours editing one video. I spend zero hours — and my bot is more consistent than any human editor could ever be."
+    <strong>— The philosophy behind this project</strong>
+  </div>
+
+  <!-- THE PROBLEM -->
+  <h2>The Problem With YouTube in 2025</h2>
+
+  <p>
+    YouTube rewards consistency above almost everything else. Channels that upload daily grow faster, get recommended more, and compound their subscriber count geometrically. But <strong>daily content creation is unsustainable</strong> for most solo creators.
+  </p>
+
+  <p>
+    Think about what goes into one YouTube Short: picking a topic, researching it, writing a script, recording audio (or finding voiceover), sourcing images, editing the video, writing a title and description, finding hashtags, and finally uploading. That's 2–4 hours per video, every single day.
+  </p>
+
+  <p>
+    I wanted a way to build a YouTube presence on "educational facts" channels — the kind with millions of subscribers — without the grind. The answer was automation.
+  </p>
+
+  <!-- THE CONCEPT -->
+  <h2>The Idea: A 4-Step AI Pipeline</h2>
+
+  <p>
+    The concept is simple. Every day at 10 AM UTC, a pipeline runs automatically that handles four jobs: <strong>write, speak, film, publish</strong>. Here's the full flow at a high level:
+  </p>
+
+  <!-- PIPELINE DIAGRAM -->
+  <div class="diagram-card">
+    <div class="diagram-label">📊 Full Automation Pipeline — End to End</div>
+    <div class="svg-wrapper">
+      <svg width="100%" viewBox="0 0 680 240" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- Step boxes -->
+        <!-- Step 1: Topic -->
+        <rect x="20" y="80" width="128" height="80" rx="10" fill="#fff7f7" stroke="#e53e3e" stroke-width="1"/>
+        <rect x="20" y="80" width="128" height="26" rx="10" fill="#e53e3e"/>
+        <rect x="20" y="96" width="128" height="10" fill="#e53e3e"/>
+        <text x="84" y="98" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" font-weight="700" fill="white">STEP 1</text>
+        <text x="84" y="126" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="13" font-weight="700" fill="#1a1a1a">Topic → Script</text>
+        <text x="84" y="144" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#6b6b6b">Google Gemini AI</text>
+
+        <!-- Arrow 1 -->
+        <line x1="150" y1="120" x2="176" y2="120" stroke="#999" stroke-width="1.2" marker-end="url(#arr)" fill="none"/>
+
+        <!-- Step 2: Voice -->
+        <rect x="178" y="80" width="128" height="80" rx="10" fill="#f0f7ff" stroke="#3182ce" stroke-width="1"/>
+        <rect x="178" y="80" width="128" height="26" rx="10" fill="#3182ce"/>
+        <rect x="178" y="96" width="128" height="10" fill="#3182ce"/>
+        <text x="242" y="98" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" font-weight="700" fill="white">STEP 2</text>
+        <text x="242" y="126" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="13" font-weight="700" fill="#1a1a1a">Script → Voice</text>
+        <text x="242" y="144" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#6b6b6b">Microsoft Edge TTS</text>
+
+        <!-- Arrow 2 -->
+        <line x1="308" y1="120" x2="334" y2="120" stroke="#999" stroke-width="1.2" marker-end="url(#arr)" fill="none"/>
+
+        <!-- Step 3: Video -->
+        <rect x="336" y="80" width="128" height="80" rx="10" fill="#f7f0ff" stroke="#7c3aed" stroke-width="1"/>
+        <rect x="336" y="80" width="128" height="26" rx="10" fill="#7c3aed"/>
+        <rect x="336" y="96" width="128" height="10" fill="#7c3aed"/>
+        <text x="400" y="98" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" font-weight="700" fill="white">STEP 3</text>
+        <text x="400" y="126" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="13" font-weight="700" fill="#1a1a1a">Voice → Video</text>
+        <text x="400" y="144" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#6b6b6b">MoviePy + Pillow</text>
+
+        <!-- Arrow 3 -->
+        <line x1="466" y1="120" x2="492" y2="120" stroke="#999" stroke-width="1.2" marker-end="url(#arr)" fill="none"/>
+
+        <!-- Step 4: Upload -->
+        <rect x="494" y="80" width="166" height="80" rx="10" fill="#f0fff4" stroke="#38a169" stroke-width="1"/>
+        <rect x="494" y="80" width="166" height="26" rx="10" fill="#38a169"/>
+        <rect x="494" y="96" width="166" height="10" fill="#38a169"/>
+        <text x="577" y="98" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" font-weight="700" fill="white">STEP 4</text>
+        <text x="577" y="126" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="13" font-weight="700" fill="#1a1a1a">Video → YouTube</text>
+        <text x="577" y="144" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#6b6b6b">YouTube Data API v3</text>
+
+        <!-- GitHub Actions banner at top -->
+        <rect x="20" y="30" width="640" height="32" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="0.8"/>
+        <text x="340" y="51" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="12" font-weight="700" fill="#24292f">⚙️  GitHub Actions — Runs Every Day at 10:00 AM UTC — Zero Server Required</text>
+
+        <!-- Daily loop arrow -->
+        <path d="M577 160 Q577 210 340 210 Q200 210 84 210 Q84 210 84 162" stroke="#ccc" stroke-width="1.2" stroke-dasharray="5 4" fill="none" marker-end="url(#arr)"/>
+        <text x="340" y="228" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#9ca3af">↻ Repeats daily — cycles to next topic in list</text>
+      </svg>
+    </div>
+  </div>
+
+  <p>
+    Each step is handled by a separate Python script in the <code>scripts/</code> folder. The main pipeline in <code>main.py</code> calls them in sequence, passes data forward, and handles errors gracefully at each stage.
+  </p>
+
+  <!-- TECH STACK -->
+  <h2>The Tech Stack — All Free, All Powerful</h2>
+
+  <p>
+    Here's the part people find hard to believe. Every single tool in this stack is free. Not "free trial" free. Not "free tier that expires." Permanently, actually free.
+  </p>
+
+  <table class="comparison-table">
+    <tr>
+      <th>Component</th>
+      <th>Tool</th>
+      <th>Why This One</th>
+      <th>Cost</th>
+    </tr>
+    <tr>
+      <td><strong>AI Script</strong></td>
+      <td>Google Gemini</td>
+      <td>1,500 req/day on free tier. Output quality rivals GPT-4.</td>
+      <td class="free">FREE</td>
+    </tr>
+    <tr>
+      <td><strong>Voiceover</strong></td>
+      <td>Edge TTS</td>
+      <td>Microsoft's neural voices — sounds genuinely human.</td>
+      <td class="free">FREE</td>
+    </tr>
+    <tr>
+      <td><strong>AI Images</strong></td>
+      <td>Pollinations.ai</td>
+      <td>No API key needed. Unlimited generations.</td>
+      <td class="free">FREE</td>
+    </tr>
+    <tr>
+      <td><strong>Video Assembly</strong></td>
+      <td>MoviePy + FFmpeg</td>
+      <td>Industry-standard. Python-native. Runs anywhere.</td>
+      <td class="free">FREE</td>
+    </tr>
+    <tr>
+      <td><strong>YouTube Upload</strong></td>
+      <td>YouTube Data API</td>
+      <td>10,000 units/day quota. 1 upload ≈ 1,600 units.</td>
+      <td class="free">FREE</td>
+    </tr>
+    <tr>
+      <td><strong>Scheduler</strong></td>
+      <td>GitHub Actions</td>
+      <td>2,000 min/month free. No server needed.</td>
+      <td class="free">FREE</td>
+    </tr>
+  </table>
+
+  <div class="callout">
+    <div class="callout-title">💡 Why not ChatGPT or ElevenLabs?</div>
+    <p>Both have paid tiers that would make this expensive at scale. Gemini's free tier gives you 1,500 AI calls per day — way more than the 1 you need. Edge TTS sounds nearly identical to ElevenLabs at a fraction of the cost (free vs ~$100/month at scale).</p>
+  </div>
+
+  <!-- ARCHITECTURE DEEP DIVE -->
+  <h2>Inside the Code: How It Actually Works</h2>
+
+  <p>Let me walk you through the four scripts that make this work, and then show you the one main file that orchestrates them all.</p>
+
+  <!-- ARCHITECTURE DIAGRAM -->
+  <div class="diagram-card">
+    <div class="diagram-label">🏗️ Module Architecture — How Scripts Connect</div>
+    <div class="svg-wrapper">
+      <svg width="100%" viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- main.py center -->
+        <rect x="250" y="145" width="180" height="90" rx="12" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+        <text x="340" y="183" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="14" font-weight="700" fill="white">main.py</text>
+        <text x="340" y="203" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#aaa">Pipeline Orchestrator</text>
+        <text x="340" y="222" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#666">state.json · TOPICS list</text>
+
+        <!-- Generate Script -->
+        <rect x="30" y="20" width="175" height="68" rx="8" fill="#fff7f7" stroke="#e53e3e" stroke-width="1"/>
+        <text x="117" y="50" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="12" font-weight="700" fill="#1a1a1a">generate_script.py</text>
+        <text x="117" y="68" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#6b6b6b">Gemini API → JSON output</text>
+        <text x="117" y="82" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#6b6b6b">title · script · tags · desc</text>
+
+        <!-- Arrow Script to main -->
+        <path d="M205 84 Q250 130 252 145" stroke="#e53e3e" stroke-width="1.2" fill="none" marker-end="url(#arr2)" stroke-dasharray="none"/>
+
+        <!-- Generate Voice -->
+        <rect x="30" y="156" width="175" height="68" rx="8" fill="#f0f7ff" stroke="#3182ce" stroke-width="1"/>
+        <text x="117" y="186" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="12" font-weight="700" fill="#1a1a1a">generate_voice.py</text>
+        <text x="117" y="203" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#6b6b6b">Edge TTS → .mp3 file</text>
+        <text x="117" y="217" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#6b6b6b">Configurable voice + speed</text>
+
+        <!-- Arrow Voice to main -->
+        <line x1="205" y1="190" x2="249" y2="190" stroke="#3182ce" stroke-width="1.2" fill="none" marker-end="url(#arr2)"/>
+
+        <!-- Generate Video -->
+        <rect x="30" y="292" width="175" height="68" rx="8" fill="#f7f0ff" stroke="#7c3aed" stroke-width="1"/>
+        <text x="117" y="322" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="12" font-weight="700" fill="#1a1a1a">generate_video.py</text>
+        <text x="117" y="339" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#6b6b6b">MoviePy + Pillow → .mp4</text>
+        <text x="117" y="353" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#6b6b6b">1080×1920 Shorts format</text>
+
+        <!-- Arrow Video to main -->
+        <path d="M205 296 Q250 250 252 235" stroke="#7c3aed" stroke-width="1.2" fill="none" marker-end="url(#arr2)"/>
+
+        <!-- Upload YouTube -->
+        <rect x="475" y="145" width="175" height="90" rx="8" fill="#f0fff4" stroke="#38a169" stroke-width="1"/>
+        <text x="562" y="180" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="12" font-weight="700" fill="#1a1a1a">upload_youtube.py</text>
+        <text x="562" y="197" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#6b6b6b">YouTube API v3</text>
+        <text x="562" y="212" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#6b6b6b">OAuth2 · returns video_id</text>
+        <text x="562" y="226" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#6b6b6b">Sets privacy + category</text>
+
+        <!-- Arrow main to upload -->
+        <line x1="430" y1="190" x2="473" y2="190" stroke="#38a169" stroke-width="1.2" fill="none" marker-end="url(#arr2)"/>
+
+        <!-- Data flow labels -->
+        <text x="228" y="128" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="9" fill="#e53e3e" font-style="italic">script_data{}</text>
+        <text x="228" y="183" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="9" fill="#3182ce" font-style="italic">audio .mp3</text>
+        <text x="228" y="258" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="9" fill="#7c3aed" font-style="italic">video .mp4</text>
+        <text x="452" y="183" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="9" fill="#38a169" font-style="italic">video_id returned</text>
+
+        <!-- GitHub Actions envelope at bottom -->
+        <rect x="160" y="330" width="360" height="36" rx="8" fill="#f6f8fa" stroke="#d0d7de" stroke-width="0.8"/>
+        <text x="340" y="354" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#24292f" font-weight="600">⚙️ GitHub Actions triggers main.py daily</text>
+      </svg>
+    </div>
+  </div>
+
+  <h3>Step 1: Generating the Script with Gemini AI</h3>
+
+  <p>
+    The script generator calls Google Gemini with a structured prompt, asking it to return JSON with a title, narration script, description, and hashtags. I also built an offline fallback that generates a basic script locally — so the bot never fails completely even during API outages.
+  </p>
+
+  <pre><button class="copy-btn" onclick="cpCode(this)">Copy</button><code><span class="cm"># scripts/generate_script.py (simplified)</span>
+<span class="kw">import</span> google.generativeai <span class="kw">as</span> genai
+
+<span class="kw">def</span> <span class="fn">generate_script</span>(topic: <span class="fn">str</span>):
+    model = genai.GenerativeModel(<span class="str">"gemini-1.5-flash"</span>)
+    prompt = <span class="str">f"""Create a YouTube Shorts script about: {topic}
+    Return JSON with: title, script (60s), description, tags list"""</span>
+    
+    response = model.generate_content(prompt)
+    <span class="kw">return</span> json.loads(response.text)  <span class="cm"># Returns clean dict</span></code></pre>
+
+  <h3>Step 2: Generating Human-Quality Voiceover</h3>
+
+  <p>
+    Microsoft Edge TTS is the hidden gem of this whole project. It's completely free, requires no API key, and the neural voices (like <code>en-US-AriaNeural</code>) sound remarkably human. You can control speed, pitch, and choose from dozens of voices including Indian English options.
+  </p>
+
+  <pre><button class="copy-btn" onclick="cpCode(this)">Copy</button><code><span class="cm"># scripts/generate_voice.py (simplified)</span>
+<span class="kw">import</span> edge_tts, asyncio
+
+VOICE = <span class="str">"en-US-AriaNeural"</span>   <span class="cm"># Change to en-IN-NeerjaNeural for Indian accent</span>
+RATE  = <span class="str">"+10%"</span>              <span class="cm"># Slightly faster — good for Shorts</span>
+
+<span class="kw">async def</span> <span class="fn">_speak</span>(text, output_path):
+    communicate = edge_tts.Communicate(text, VOICE, rate=RATE)
+    <span class="kw">await</span> communicate.save(output_path)
+
+<span class="kw">def</span> <span class="fn">generate_voiceover</span>(script: <span class="fn">str</span>, output_path: <span class="fn">str</span>):
+    asyncio.run(_speak(script, output_path))
+    <span class="kw">return</span> True</code></pre>
+
+  <h3>Step 3: Assembling the Video with MoviePy</h3>
+
+  <p>
+    The video generator fetches AI-generated images from Pollinations.ai (no key needed), overlays text slides with channel branding, syncs everything to the audio duration, and outputs a 1080×1920 vertical video ready for Shorts.
+  </p>
+
+  <h3>Step 4: Uploading to YouTube</h3>
+
+  <p>
+    The YouTube uploader handles OAuth 2.0 authentication, injects the AI-generated title, description, and tags, sets video category and privacy, and returns the live video URL. The OAuth token is stored locally so you only authorize once — ever.
+  </p>
+
+  <!-- GITHUB ACTIONS DIAGRAM -->
+  <h2>The Automation Layer: GitHub Actions</h2>
+
+  <p>
+    This is what makes it truly zero-maintenance. GitHub Actions runs the entire pipeline on a cron schedule — for free — even when your laptop is off, even when you're on vacation, every single day.
+  </p>
+
+  <!-- SCHEDULING DIAGRAM -->
+  <div class="diagram-card">
+    <div class="diagram-label">📅 GitHub Actions Scheduling Flow</div>
+    <div class="svg-wrapper">
+      <svg width="100%" viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- Cron Trigger -->
+        <rect x="20" y="60" width="140" height="80" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1"/>
+        <text x="90" y="92" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="12" font-weight="700" fill="#92400e">⏰ Cron Trigger</text>
+        <text x="90" y="110" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#92400e">0 10 * * *</text>
+        <text x="90" y="128" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#b45309">Daily 10AM UTC</text>
+
+        <line x1="162" y1="100" x2="192" y2="100" stroke="#999" stroke-width="1.2" marker-end="url(#arr3)" fill="none"/>
+
+        <!-- GitHub Runner -->
+        <rect x="194" y="60" width="140" height="80" rx="10" fill="#f6f8fa" stroke="#586069" stroke-width="1"/>
+        <text x="264" y="92" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="12" font-weight="700" fill="#24292f">⚙️ Ubuntu Runner</text>
+        <text x="264" y="110" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#586069">Python 3.11 setup</text>
+        <text x="264" y="128" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#586069">pip install deps</text>
+
+        <line x1="336" y1="100" x2="366" y2="100" stroke="#999" stroke-width="1.2" marker-end="url(#arr3)" fill="none"/>
+
+        <!-- Secrets Injection -->
+        <rect x="368" y="60" width="140" height="80" rx="10" fill="#f0fff4" stroke="#38a169" stroke-width="1"/>
+        <text x="438" y="88" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="12" font-weight="700" fill="#276749">🔐 Inject Secrets</text>
+        <text x="438" y="106" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#276749">GEMINI_API_KEY</text>
+        <text x="438" y="122" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#276749">YOUTUBE_TOKEN</text>
+        <text x="438" y="138" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#38a169">From Repo Secrets</text>
+
+        <line x1="510" y1="100" x2="540" y2="100" stroke="#999" stroke-width="1.2" marker-end="url(#arr3)" fill="none"/>
+
+        <!-- Run Bot -->
+        <rect x="542" y="60" width="118" height="80" rx="10" fill="#1a1a1a" stroke="#555" stroke-width="1"/>
+        <text x="601" y="92" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="12" font-weight="700" fill="white">🚀 python</text>
+        <text x="601" y="110" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="12" font-weight="700" fill="white">main.py</text>
+        <text x="601" y="128" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="10" fill="#aaa">Video uploaded ✓</text>
+
+        <!-- Note -->
+        <text x="340" y="180" text-anchor="middle" font-family="Source Sans 3, sans-serif" font-size="11" fill="#6b6b6b" font-style="italic">Runs ~5 min/day · uses &lt;3% of GitHub's 2,000 free monthly minutes</text>
+      </svg>
+    </div>
+  </div>
+
+  <pre><button class="copy-btn" onclick="cpCode(this)">Copy</button><code><span class="cm"># .github/workflows/auto_upload.yml</span>
+name: Daily YouTube Upload
+
+on:
+  schedule:
+    - cron: <span class="str">"0 10 * * *"</span>   <span class="cm"># Every day at 10 AM UTC (3:30 PM IST)</span>
+  workflow_dispatch:     <span class="cm"># Manual trigger from GitHub UI</span>
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: <span class="str">'3.11'</span>
+      - run: pip install -r requirements.txt
+      - run: python main.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}</code></pre>
+
+  <!-- FREE TIER TABLE -->
+  <h2>Will I Hit API Limits? The Honest Math</h2>
+
+  <p>
+    This was my biggest worry before building this. Let me show you the actual numbers:
+  </p>
+
+  <table class="free-table">
+    <tr>
+      <th>Service</th>
+      <th>Free Limit</th>
+      <th>Daily Need</th>
+      <th>Headroom</th>
+    </tr>
+    <tr>
+      <td>Google Gemini</td>
+      <td>1,500 req/day</td>
+      <td>1 req</td>
+      <td class="tick">✓ 1500× buffer</td>
+    </tr>
+    <tr>
+      <td>YouTube Data API</td>
+      <td>10,000 units/day</td>
+      <td>~1,600 units</td>
+      <td class="tick">✓ 6× buffer</td>
+    </tr>
+    <tr>
+      <td>GitHub Actions</td>
+      <td>2,000 min/month</td>
+      <td>~5 min</td>
+      <td class="tick">✓ 400× buffer</td>
+    </tr>
+    <tr>
+      <td>Microsoft Edge TTS</td>
+      <td>Unlimited</td>
+      <td>1 call</td>
+      <td class="tick">✓ Unlimited</td>
+    </tr>
+    <tr>
+      <td>Pollinations.ai</td>
+      <td>Unlimited</td>
+      <td>~3 images</td>
+      <td class="tick">✓ Unlimited</td>
+    </tr>
+  </table>
+
+  <p>
+    You could run this bot for 10 years and never come close to a single quota limit. <strong>This is genuinely free forever.</strong>
+  </p>
+
+  <!-- HOW TO START -->
+  <h2>How to Set It Up (5-Step Quick Start)</h2>
+
+  <div class="numbered-step">
+    <div class="step-number">1</div>
+    <div class="step-body">
+      <h4>Clone the repo and install dependencies</h4>
+      <p>Clone from GitHub, create a virtual environment, run <code>pip install -r requirements.txt</code>. All packages are open source and free.</p>
+    </div>
+  </div>
+
+  <div class="numbered-step">
+    <div class="step-number">2</div>
+    <div class="step-body">
+      <h4>Get your free Gemini API key</h4>
+      <p>Visit <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>, sign in with any Google account, and click "Create API Key" in under 60 seconds.</p>
+    </div>
+  </div>
+
+  <div class="numbered-step">
+    <div class="step-number">3</div>
+    <div class="step-body">
+      <h4>Set up YouTube OAuth (one time only)</h4>
+      <p>Create a Google Cloud project, enable YouTube Data API v3, download the OAuth credentials JSON, rename it <code>client_secrets.json</code>, and run the bot once locally to authorize.</p>
+    </div>
+  </div>
+
+  <div class="numbered-step">
+    <div class="step-number">4</div>
+    <div class="step-body">
+      <h4>Customize your topic list</h4>
+      <p>Edit the <code>TOPICS</code> list in <code>main.py</code>. Add your niche — facts, history, science, finance, motivational quotes. The bot cycles through them daily.</p>
+    </div>
+  </div>
+
+  <div class="numbered-step">
+    <div class="step-number">5</div>
+    <div class="step-body">
+      <h4>Push to GitHub and add your secrets</h4>
+      <p>Push the repo, add <code>GEMINI_API_KEY</code> and your encoded YouTube token to GitHub Secrets, and enable Actions. Your bot is live forever.</p>
+    </div>
+  </div>
+
+  <!-- GITHUB CTA -->
+  <div class="github-cta">
+    <div class="github-icon">⚡</div>
+    <div>
+      <h4>The full source code is on GitHub — free and open source</h4>
+      <p>Clone it, fork it, build your own automation empire. Star the repo if this helped you!</p>
+    </div>
+    <a class="github-btn" href="https://github.com/jayvardhan6061/Youtube_Bot" target="_blank">⭐ View on GitHub</a>
+  </div>
+
+  <!-- CUSTOMIZATION -->
+  <h2>Make It Your Own: Advanced Customization</h2>
+
+  <p>
+    The bot is designed to be hacked. Here are the three things most people want to change:
+  </p>
+
+  <h3>Change the voice</h3>
+  <p>Open <code>scripts/generate_voice.py</code> and change the <code>VOICE</code> variable. Popular choices:</p>
+
+  <pre><button class="copy-btn" onclick="cpCode(this)">Copy</button><code>VOICE = <span class="str">"en-US-GuyNeural"</span>     <span class="cm"># US male — authoritative, great for facts</span>
+VOICE = <span class="str">"en-IN-NeerjaNeural"</span>  <span class="cm"># Indian English female — friendly</span>
+VOICE = <span class="str">"en-GB-RyanNeural"</span>    <span class="cm"># UK male — sounds professional</span>
+RATE  = <span class="str">"+15%"</span>              <span class="cm"># Slightly faster for Shorts pacing</span></code></pre>
+
+  <h3>Change the branding</h3>
+  <p>Edit <code>scripts/generate_video.py</code>:</p>
+
+  <pre><button class="copy-btn" onclick="cpCode(this)">Copy</button><code>CHANNEL_NAME = <span class="str">"Your Channel Name"</span>  <span class="cm"># Shown in title bar</span>
+ACCENT_COLOR = (<span class="num">230</span>, <span class="num">130</span>, <span class="num">30</span>)       <span class="cm"># Orange — change to match your brand RGB</span>
+BG_COLOR     = (<span class="num">245</span>, <span class="num">242</span>, <span class="num">235</span>)       <span class="cm"># Warm white background</span></code></pre>
+
+  <h3>Change upload privacy</h3>
+  <p>Use <code>"private"</code> while testing, switch to <code>"public"</code> for live uploads:</p>
+
+  <pre><button class="copy-btn" onclick="cpCode(this)">Copy</button><code>DEFAULT_PRIVACY = <span class="str">"private"</span>   <span class="cm"># Safe for testing</span>
+DEFAULT_PRIVACY = <span class="str">"public"</span>    <span class="cm"># Live — visible on YouTube</span></code></pre>
+
+  <!-- LESSONS LEARNED -->
+  <h2>What I Learned Building This</h2>
+
+  <p>
+    Building this taught me three things I didn't expect:
+  </p>
+
+  <p>
+    <strong>1. The YouTube OAuth setup is the only hard part.</strong> Everything else — Gemini, Edge TTS, MoviePy — is laughably easy to integrate. But YouTube's OAuth2 flow is genuinely annoying for first-timers. Stick with it. Once you're past it, the bot runs forever without touching auth again.
+  </p>
+
+  <p>
+    <strong>2. Edge TTS is wildly underrated.</strong> I tried ElevenLabs, gTTS, and even local TTS models. Edge TTS sounds better than most, costs nothing, and has zero rate limits. It shouldn't be free, but it is.
+  </p>
+
+  <p>
+    <strong>3. Consistency beats perfection on YouTube.</strong> My bot's videos aren't as polished as hand-crafted content. But they publish daily, without fail. The algorithm rewards that consistency in ways that occasional "great" videos can't match.
+  </p>
+
+  <div class="pull-quote">
+    "The best YouTube strategy isn't one viral video. It's 365 consistent ones. Automation makes 365 possible."
+  </div>
+
+  <!-- ROADMAP -->
+  <h2>What's Coming Next</h2>
+
+  <p>
+    The project roadmap includes background music support, custom AI thumbnail generation, multi-language support for regional YouTube audiences, and potentially cross-posting to Instagram Reels and TikTok.
+  </p>
+
+  <p>
+    The architecture is already designed for this — each feature is just a new script added to the pipeline. The hardest part (reliable daily automation) is already solved.
+  </p>
+
+  <!-- OUTRO -->
+  <div class="outro-box">
+    <h3>Start Your Own YouTube Bot Today</h3>
+    <p>The full project is open source, MIT licensed, and completely free to use, fork, and modify.</p>
+    <a class="github-btn" href="https://github.com/jayvardhan6061/Youtube_Bot" target="_blank" style="display:inline-block;">⭐ Star the Repo on GitHub</a>
+  </div>
+
+  <!-- TAGS -->
+  <div class="tag-list">
+    <span class="tag">Python</span>
+    <span class="tag">YouTube Automation</span>
+    <span class="tag">AI Tools</span>
+    <span class="tag">Google Gemini</span>
+    <span class="tag">GitHub Actions</span>
+    <span class="tag">Side Project</span>
+    <span class="tag">Content Creation</span>
+    <span class="tag">Passive Income</span>
+    <span class="tag">Tutorial</span>
+    <span class="tag">Open Source</span>
+    <span class="tag">No-Code Alternative</span>
+    <span class="tag">Free Tools</span>
+  </div>
+
+</div>
+
+<script>
+  function cpCode(btn) {
+    const pre = btn.parentElement;
+    const text = pre.innerText.replace(/^(Copy|Copied!)\n/, '');
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>

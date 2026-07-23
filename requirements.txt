@@ -1,0 +1,18 @@
+# YouTube Automation Bot - Python Dependencies
+# Install with: pip install -r requirements.txt
+# All packages are FREE and open source
+
+# ── Voiceover (Microsoft Edge TTS - free, no API key needed) ──
+edge-tts>=6.1.9
+
+# ── Alternative voiceover (Google TTS - also free) ──
+gTTS>=2.5.0
+
+# ── Video creation ──
+moviepy>=1.0.3
+pillow>=10.0.0
+
+# ── YouTube API ──
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.120.0
+google-auth-httplib2>=0.2.0

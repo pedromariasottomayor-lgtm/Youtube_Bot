@@ -1,0 +1,310 @@
+
+╔══════════════════════════════════════════════════════════════════╗
+║         YOUTUBE AUTOMATION BOT — COMPLETE SETUP GUIDE           ║
+║                   100% FREE STACK                                ║
+╚══════════════════════════════════════════════════════════════════╝
+
+WHAT THIS BOT DOES:
+  Every time it runs, it:
+  1. Picks a topic from your list
+  2. Generates a script using Google Gemini AI (free)
+  3. Creates a voiceover using Microsoft Edge TTS (free)
+  4. Creates a video with slides using Python (free)
+  5. Uploads automatically to YouTube (free)
+  6. Schedules itself to repeat daily/weekly
+
+────────────────────────────────────────────────────────────────
+  PART 1: INSTALL REQUIRED SOFTWARE
+────────────────────────────────────────────────────────────────
+
+STEP 1A — Install Python 3.11+
+  Windows: https://www.python.org/downloads/
+           ✅ Check "Add Python to PATH" during install!
+  Mac:     https://www.python.org/downloads/
+  Linux:   sudo apt install python3 python3-pip
+
+  Verify:  Open terminal/command prompt, type:
+           python --version
+           Should show: Python 3.11.x or higher
+
+
+STEP 1B — Install FFmpeg (needed for video assembly)
+  Windows:
+    1. Go to https://ffmpeg.org/download.html
+    2. Click "Windows builds by BtbN" → Download ffmpeg-release-essentials.zip
+    3. Extract to C:\ffmpeg
+    4. Add C:\ffmpeg\bin to PATH:
+       - Search "environment variables" in Start menu
+       - Click "Environment Variables"
+       - Under System Variables, click "Path" → Edit → New
+       - Type: C:\ffmpeg\bin
+       - Click OK
+
+  Mac:
+    brew install ffmpeg
+    (Install Homebrew first from https://brew.sh if needed)
+
+  Linux:
+    sudo apt-get install ffmpeg
+
+  Verify:  ffmpeg -version
+           Should show FFmpeg version info
+
+
+STEP 1C — Install Python packages
+  Open terminal, navigate to your project folder, run:
+  
+  pip install -r requirements.txt
+
+  This installs: edge-tts, gTTS, moviepy, pillow,
+                 google-auth-oauthlib, google-api-python-client
+
+────────────────────────────────────────────────────────────────
+  PART 2: GET FREE GEMINI API KEY (for script generation)
+────────────────────────────────────────────────────────────────
+
+STEP 2A — Get your free Gemini API key
+  1. Go to: https://aistudio.google.com/app/apikey
+  2. Sign in with any Google account
+  3. Click "Create API Key"
+  4. Copy the key (looks like: AIzaSy...)
+
+STEP 2B — Add the key to the bot
+  Option A (simple): Open scripts/generate_script.py
+                     Find line: GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE"
+                     Replace with your actual key
+
+  Option B (safer): Set it as an environment variable:
+    Windows: set GEMINI_API_KEY=AIzaSy...your...key
+    Mac/Linux: export GEMINI_API_KEY=AIzaSy...your...key
+
+  FREE TIER LIMITS: 1,500 requests/day — more than enough!
+
+────────────────────────────────────────────────────────────────
+  PART 3: SET UP YOUTUBE API (to auto-upload)
+────────────────────────────────────────────────────────────────
+
+STEP 3A — Create Google Cloud Project
+  1. Go to: https://console.cloud.google.com
+  2. Click "Select a project" → "New Project"
+  3. Name it "YouTube Bot" → Create
+
+STEP 3B — Enable YouTube Data API
+  1. In Google Cloud Console, go to "APIs & Services" → "Library"
+  2. Search "YouTube Data API v3"
+  3. Click it → Click "Enable"
+
+STEP 3C — Create OAuth2 Credentials
+  1. Go to "APIs & Services" → "Credentials"
+  2. Click "Create Credentials" → "OAuth Client ID"
+  3. If asked, configure consent screen first:
+     - User type: External
+     - App name: YouTube Bot
+     - Add your email as test user
+     - Add scope: youtube.upload
+  4. Application type: "Desktop app"
+  5. Name: "YouTube Bot"
+  6. Click "Create"
+  7. Click "Download JSON"
+  8. Rename the downloaded file to: client_secrets.json
+  9. Place it in the youtube_bot folder
+
+STEP 3D — First-time login (one time only)
+  Run: python main.py
+  
+  A browser window will open → Login with your YouTube account
+  → Allow permissions → Browser will show "Authentication complete"
+  
+  The bot saves a token (youtube_token.pickle) so you never
+  need to login again!
+
+────────────────────────────────────────────────────────────────
+  PART 4: CUSTOMIZE YOUR CONTENT
+────────────────────────────────────────────────────────────────
+
+STEP 4A — Change video topics
+  Open main.py, find the TOPICS list:
+  
+  TOPICS = [
+      "5 Amazing Facts About Space",
+      "How Artificial Intelligence Works",
+      ...
+  ]
+  
+  Replace with YOUR niche topics. The bot cycles through
+  the list, doing one per run.
+
+STEP 4B — Change video style
+  Open scripts/generate_video.py:
+  
+  BG_COLOR    = (15, 15, 30)     ← Background RGB color
+  TEXT_COLOR  = (255, 255, 255)  ← Text color
+  FONT_SIZE   = 48               ← Text size
+  
+  Change SLIDE_THEMES list for different color schemes.
+
+STEP 4C — Change voice
+  Open scripts/generate_voice.py:
+  
+  SELECTED_VOICE = VOICES["male_us"]   ← Change voice here
+  
+  Available voices:
+    "male_us"   — US English male
+    "female_us" — US English female
+    "male_uk"   — British English male
+    "female_uk" — British English female
+    "male_au"   — Australian English male
+
+STEP 4D — Change upload privacy
+  Open scripts/upload_youtube.py:
+  
+  privacy: str = "public"   ← Change to "private" while testing!
+  
+  Use "private" first to check the video looks good,
+  then change to "public" for live uploads.
+
+────────────────────────────────────────────────────────────────
+  PART 5: TEST THE BOT
+────────────────────────────────────────────────────────────────
+
+STEP 5A — Test each step individually
+
+  Test script generation:
+    python scripts/generate_script.py
+
+  Test voiceover (creates output/test_voice.mp3):
+    python scripts/generate_voice.py
+
+  Test slide creation (creates output/slides/test.png):
+    python scripts/generate_video.py
+
+  Test full pipeline:
+    python main.py
+
+STEP 5B — Check output
+  After running, look in the output/ folder:
+  - output/video_TIMESTAMP.mp4  ← Your final video
+  - output/video_TIMESTAMP.mp3  ← The voiceover audio
+  - output/slides/              ← Individual slides
+  - bot.log                     ← Log of what happened
+
+────────────────────────────────────────────────────────────────
+  PART 6: SCHEDULE AUTOMATIC RUNS
+────────────────────────────────────────────────────────────────
+
+══ OPTION A: GitHub Actions (Recommended — runs in the cloud) ══
+
+  This is the BEST option — it runs even when your PC is off!
+
+  1. Create a free GitHub account at https://github.com
+  2. Create a new repository (can be private)
+  3. Upload all bot files to the repository
+  4. Add secrets to GitHub:
+     - Go to repository → Settings → Secrets → Actions
+     - Add secret: GEMINI_API_KEY = your_key_here
+  5. For the YouTube token:
+     - Run the bot once locally to create youtube_token.pickle
+     - Convert to base64: 
+         Windows: certutil -encode youtube_token.pickle token.txt
+         Mac/Linux: base64 youtube_token.pickle
+     - Add secret: YOUTUBE_TOKEN_B64 = (paste the base64 text)
+  6. Push the .github/workflows/auto_upload.yml file
+  7. The bot now runs automatically every day at 10AM UTC!
+  
+  Change the schedule in auto_upload.yml:
+    "0 10 * * *"  = every day at 10:00 AM UTC
+    "0 10 * * 1"  = every Monday
+    "0 10 */2 * *" = every 2 days
+
+
+══ OPTION B: Windows Task Scheduler (runs on your PC) ══
+
+  1. Edit run_bot.bat — update the folder path and API key
+  2. Open Windows Task Scheduler (search in Start menu)
+  3. Click "Create Basic Task"
+  4. Name: "YouTube Bot"
+  5. Trigger: Daily (pick your time)
+  6. Action: "Start a program"
+  7. Program: Browse to your run_bot.bat file
+  8. Click Finish
+  
+  ⚠️  Your PC must be ON and connected to internet at that time!
+
+
+══ OPTION C: Linux/Mac Cron (runs on your PC/server) ══
+
+  1. Edit run_bot.sh — update folder path and API key
+  2. Make it executable: chmod +x run_bot.sh
+  3. Open crontab: crontab -e
+  4. Add this line (runs daily at 10 AM):
+     0 10 * * * /full/path/to/youtube_bot/run_bot.sh
+  5. Save and exit
+
+  ⚠️  Your computer must be ON at that time!
+
+────────────────────────────────────────────────────────────────
+  PART 7: TROUBLESHOOTING
+────────────────────────────────────────────────────────────────
+
+ERROR: "edge-tts not found"
+  Fix: pip install edge-tts
+
+ERROR: "ffmpeg not found" or "moviepy error"
+  Fix: Install FFmpeg and add to PATH (see Step 1B)
+  Alt: pip install imageio[ffmpeg]
+
+ERROR: "Gemini API key invalid"
+  Fix: Double-check the key in generate_script.py
+       Make sure there are no spaces around the key
+
+ERROR: "client_secrets.json not found"
+  Fix: Download it from Google Cloud Console (Step 3C)
+       Place it in the youtube_bot folder
+
+ERROR: "YouTube upload failed: quota exceeded"
+  Fix: YouTube API has 10,000 units/day free
+       Each upload uses ~1,600 units
+       You can upload ~6 videos per day max
+       Wait 24 hours to reset
+
+ERROR: "No module named X"
+  Fix: pip install -r requirements.txt
+
+VIDEO looks wrong / slides overlap:
+  Fix: Open generate_video.py, adjust FONT_SIZE and SLIDE_PADDING
+
+────────────────────────────────────────────────────────────────
+  QUICK START CHECKLIST
+────────────────────────────────────────────────────────────────
+
+  [ ] Python 3.11+ installed
+  [ ] FFmpeg installed and in PATH
+  [ ] pip install -r requirements.txt
+  [ ] Got free Gemini API key from aistudio.google.com
+  [ ] Added Gemini key to generate_script.py
+  [ ] Enabled YouTube Data API v3 in Google Cloud Console
+  [ ] Downloaded client_secrets.json and placed in project folder
+  [ ] Changed TOPICS list in main.py to your niche
+  [ ] Changed privacy to "private" for testing
+  [ ] Ran python main.py — first login to YouTube
+  [ ] Video appeared on YouTube (check YouTube Studio)
+  [ ] Changed privacy back to "public"
+  [ ] Set up scheduling (GitHub Actions OR Task Scheduler)
+  [ ] Done! Bot runs automatically now.
+
+────────────────────────────────────────────────────────────────
+  COST SUMMARY: $0.00 / month
+────────────────────────────────────────────────────────────────
+
+  Gemini API:          FREE (1,500 requests/day)
+  Edge TTS:            FREE (unlimited)
+  MoviePy + Pillow:    FREE (open source)
+  FFmpeg:              FREE (open source)
+  YouTube Data API:    FREE (10,000 units/day)
+  GitHub Actions:      FREE (2,000 min/month)
+                       ─────────────────────
+  TOTAL:               $0.00
+
+────────────────────────────────────────────────────────────────
+  NEED HELP? Ask Claude at claude.ai!
+────────────────────────────────────────────────────────────────

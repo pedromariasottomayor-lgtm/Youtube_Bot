@@ -1,0 +1,21 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Secrets
+client_secrets.json
+youtube_token.pickle
+.env
+
+# Logs
+*.log
+
+# Output files (generated media)
+output/
+
+# OS files
+.DS_Store
+Thumbs.db
