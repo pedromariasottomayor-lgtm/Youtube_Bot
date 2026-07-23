@@ -1,6 +1,7 @@
 # ─────────────────────────────────────────────────────────────────
 # GitHub Actions Workflow — Auto YouTube Upload
-# Runs every day at 10:00 AM UTC (3:30 PM IST)
+# Runs daily at 5:00 PM UTC (1:00 PM EST / 6:00 PM Portugal)
+# Optimal time: video ready by 3-6 PM EST peak hours
 # FREE for public repos | 2000 min/month for private repos
 # ─────────────────────────────────────────────────────────────────
 
@@ -8,13 +9,14 @@ name: Auto YouTube Upload
 
 on:
   schedule:
-    # Cron format: minute hour day month weekday
-    - cron: "0 10 * * *"    # Every day at 10:00 AM UTC
-    # Other examples:
-    # - cron: "0 10 * * 1"  # Every Monday
-    # - cron: "0 10 */2 * *" # Every 2 days
+    # Best time: 5 PM UTC = 1 PM EST = 6 PM Portugal
+    # Video generates in ~5 min, uploaded by 5:05 PM UTC
+    - cron: "0 17 * * *"    # Every day at 5:00 PM UTC
+    # Other options:
+    # - cron: "0 17 * * 1-5"  # Weekdays only
+    # - cron: "0 17 */2 * *"  # Every 2 days
 
-  workflow_dispatch:         # Also allows manual trigger from GitHub UI
+  workflow_dispatch:         # Manual trigger from GitHub UI
 
 jobs:
   upload-video:
@@ -26,15 +28,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Set up Python
+      # 2. Set up Python 3.11
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # 3. Install system dependencies (FFmpeg)
+      # 3. Install system dependencies (FFmpeg + fonts)
       - name: Install FFmpeg
-        run: sudo apt-get install -y ffmpeg fonts-dejavu
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu
 
       # 4. Install Python dependencies
       - name: Install Python packages
@@ -45,34 +47,54 @@ jobs:
         uses: actions/cache@v4
         with:
           path: state.json
-          key: bot-state-${{ github.run_number }}
-          restore-keys: bot-state-
+          key: bot-state-v2-${{ github.run_number }}
+          restore-keys: bot-state-v2-
 
       # 6. Restore YouTube token (so it doesn't ask to login every time)
       - name: Restore YouTube token
         run: |
           if [ -n "${{ secrets.YOUTUBE_TOKEN_B64 }}" ]; then
             echo "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 -d > youtube_token.pickle
+            echo "YouTube token restored successfully"
+          else
+            echo "WARNING: No YouTube token found in secrets"
           fi
 
       # 7. Run the bot
       - name: Run YouTube bot
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python main.py
+        run: |
+          echo "Starting YouTube bot..."
+          python main.py
+          echo "Bot finished with exit code: $?"
 
       # 8. Save updated state for next run
       - name: Save state
+        if: always()
         uses: actions/cache@v4
         with:
           path: state.json
-          key: bot-state-${{ github.run_number }}
+          key: bot-state-v2-${{ github.run_number }}
+          restore-keys: bot-state-v2-
 
-      # 9. Update YouTube token if it was refreshed
+      # 9. Save updated YouTube token if it was refreshed
       - name: Save updated YouTube token
         if: always()
         run: |
           if [ -f youtube_token.pickle ]; then
             TOKEN_B64=$(base64 -w 0 youtube_token.pickle)
             echo "TOKEN_B64=$TOKEN_B64" >> $GITHUB_ENV
+            echo "YouTube token saved for next run"
           fi
+
+      # 10. Upload logs as artifacts for debugging
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-logs-${{ github.run_number }}
+          path: |
+            bot.log
+            output/
+          retention-days: 7
