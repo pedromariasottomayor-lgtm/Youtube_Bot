@@ -53,11 +53,11 @@ except ImportError:
 def generate_new_topic_with_ai():
     """Use Gemini API to generate a new unique topic."""
     try:
-        from scripts.generate_script import GEMINI_API_KEY, GEMINI_URL
+        from scripts.generate_script import GEMINI_API_KEY, get_gemini_url
         import urllib.request
         import urllib.error
         
-        if GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
+        if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
             return None
             
         prompt = """Generate ONE unique YouTube Shorts topic about psychology, human behavior, or mind-blowing facts.
@@ -86,7 +86,7 @@ Examples of good topics:
         }).encode("utf-8")
 
         req = urllib.request.Request(
-            GEMINI_URL,
+            get_gemini_url("gemini-2.0-flash-lite"),
             data=payload,
             headers={"Content-Type": "application/json"},
             method="POST"

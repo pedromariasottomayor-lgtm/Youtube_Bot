@@ -29,24 +29,25 @@ GEMINI_MODELS = [
 def get_gemini_url(model):
     return f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
 
-PROMPT_TEMPLATE = """You are a YouTube content creator for a channel called "MindRank" that covers psychology, human behavior, and mind-blowing facts. Create a complete video package for the topic: "{topic}"
+PROMPT_TEMPLATE = """You are a YouTube Shorts creator for a channel called "MindRank" that covers psychology, human behavior, and mind-blowing facts. Create a VIRAL video package for the topic: "{topic}"
 
 Return ONLY a valid JSON object with these exact keys:
 {{
-  "title": "Catchy YouTube title (max 60 chars, use power words like 'secret', 'dark', 'nobody tells you')",
-  "script": "Full video narration script (150-200 words, engaging, conversational, start with a hook, no timestamps)",
-  "description": "YouTube video description (2-3 sentences + relevant hashtags)",
+  "title": "Catchy YouTube Shorts title (max 60 chars, use power words like 'secret', 'dark', 'nobody tells you', 'shocking')",
+  "script": "Full narration script (80-120 words MAXIMUM, punchy, conversational, start with a hook, end with a loop trigger)",
+  "description": "YouTube Shorts description (2-3 sentences + relevant hashtags)",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-  "hook": "First sentence to grab attention immediately",
-  "sections": ["Section 1 title", "Section 2 title", "Section 3 title"]
+  "hook": "First sentence that creates instant curiosity (knowledge gap)",
+  "sections": ["Hook", "Reveal", "Deep Dive", "Mind-Blow", "Loop Trigger"]
 }}
 
-Rules:
-- Script must flow naturally when spoken aloud
-- Start with the hook to grab attention immediately
-- End with a call to action (like and subscribe for more)
-- Tags should be relevant single words or short phrases
-- Use short sentences for better voiceover pacing
+VIRAL RULES (CRITICAL):
+- Script MUST be 80-120 words ONLY (25-35 seconds when spoken)
+- Start with the most shocking fact FIRST (in medias res)
+- Every sentence must create curiosity for the next one
+- End with a cliffhanger that makes them rewatch: "But here's what's crazy..." or "And the last one..."
+- Use short, punchy sentences. No fluff, no setup, no background info
+- The goal is to make viewers watch 2-3 times (loop effect)
 - Return ONLY the JSON, no markdown, no extra text, no explanation
 """
 
@@ -136,52 +137,46 @@ def generate_script(topic: str) -> Optional[Dict]:
 
 # ─── OFFLINE FALLBACK ────────────────────────────────────────────
 def generate_script_offline(topic: str) -> dict:
-    """Generate topic-specific offline scripts with varied templates."""
+    """
+    Generate SHORT viral scripts (80-120 words = 25-35 seconds).
+    Optimized for loop rewatches and high completion rate.
+    """
     
-    # Multiple script template patterns — topic gets woven into each
+    # Punchy hooks (knowledge gap starters)
     hooks = [
         f"What nobody tells you about {topic.lower()} will change everything.",
         f"The real truth about {topic.lower()} is far darker than you think.",
         f"You've been lied to about {topic.lower()} your entire life.",
         f"Scientists just discovered something terrifying about {topic.lower()}.",
-        f"This is why {topic.lower()} is more dangerous than you realize.",
-        f"The hidden secret behind {topic.lower()} that nobody wants you to know.",
-        f"What happens when you study {topic.lower()} for 10,000 hours? This.",
+        f"Here's why {topic.lower()} is more dangerous than you realize.",
         f"99% of people have no idea how {topic.lower()} actually works.",
     ]
     
+    # Short punchy bodies (3-4 sentences max)
     bodies = [
         [
-            f"Most people think they understand {topic.lower()}, but they're completely wrong.",
-            "The research is clear, and the results will shock you.",
+            f"Most people think they understand {topic.lower()}, but they're wrong.",
             "Your brain is designed to hide this truth from you.",
-            "Every day, millions of people fall for this without even knowing it.",
-            "The patterns are there, but only the smartest people can see them.",
-            "Once you learn this, you can never go back to how things were before.",
+            "The patterns are there, but only the smartest people see them.",
         ],
         [
             f"Here's the thing about {topic.lower()} that experts won't tell you.",
-            "It's not what you learned in school, and it's definitely not what the media says.",
+            "It's not what you learned in school.",
             "The studies that proved this were buried for years.",
-            "Your intuition is screaming at you to pay attention right now.",
-            "This knowledge has been hidden in plain sight for decades.",
-            "The final piece of this puzzle will blow your mind wide open.",
         ],
         [
             f"{topic.title()} is one of the most misunderstood things in the world.",
-            "Researchers spent 20 years studying this, and here's what they found.",
-            "The human mind is a beautifully terrifying machine.",
+            "Researchers spent 20 years studying this.",
             "Every choice you make is influenced by this one thing.",
-            "The smartest people in the world use this knowledge every single day.",
-            "Stay until the end because the last fact changes everything.",
         ],
     ]
     
+    # Loop triggers (cliffhangers that make them rewatch)
     closers = [
-        "If this blew your mind, smash that like button and subscribe to MindRank for daily insights that will change how you see the world!",
-        "Like and subscribe to MindRank right now, because we drop these mind-blowing facts every single day!",
-        "Hit subscribe to MindRank if you want to understand the hidden side of human behavior. See you tomorrow!",
-        "Don't forget to subscribe to MindRank. We expose the truth about human psychology every single day!",
+        "But here's what's crazy — it gets worse. Watch again.",
+        "And the last one? That's the one that changes everything.",
+        "Once you see it, you can never unsee it.",
+        "This is why you should never trust your first impression.",
     ]
     
     hook = random.choice(hooks)
@@ -204,13 +199,13 @@ def generate_script_offline(topic: str) -> dict:
         "title": title,
         "script": script_text,
         "description": (
-            f"Discover the truth about {topic.lower()} in this mind-blowing video! "
-            f"We explore the hidden psychology behind human behavior that nobody talks about. "
+            f"Discover the truth about {topic.lower()} in this mind-blowing Short! "
+            f"Hidden psychology nobody talks about. "
             f"#psychology #mindrank #facts #humanbehavior #mindblown #shorts"
         ),
-        "tags": ["psychology", "facts", "mindblown", "humanbehavior", "mindrank"] + topic_words,
+        "tags": ["psychology", "facts", "mindblown", "humanbehavior", "mindrank", "shorts"] + topic_words,
         "hook": hook,
-        "sections": ["The Hidden Truth", "Why It Matters", "The Mind-Blowing Conclusion"]
+        "sections": ["Hook", "Reveal", "Mind-Blow", "Loop Trigger"]
     }
 
 
