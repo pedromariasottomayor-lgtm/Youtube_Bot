@@ -224,20 +224,29 @@ def _draw_scanlines(img, intensity=0.03):
         draw.line([(0, y), (WIDTH, y)], fill=(0, 0, 0, int(255 * intensity)))
 
 
-def generate_background_video(duration: float, output_path: str) -> str:
+def generate_background_video(duration: float, output_path: str, script: str = "") -> str:
     """
     Generate animated background using Pillow frames piped to FFmpeg.
-    Creates floating particles, glowing orbs, and animated gradients.
+    Creates floating particles, glowing orbs, animated gradients, AND character animations.
     """
     from PIL import Image
+    from scripts.characters import split_into_scenes, render_scene_frame
 
-    log.info("Generating animated background (Pillow → FFmpeg pipe)...")
+    log.info("Generating animated background with characters (Pillow → FFmpeg pipe)...")
 
     # Initialize particles and orbs
-    n_particles = 80
-    n_orbs = 5
+    n_particles = 60
+    n_orbs = 4
     particles = [Particle(WIDTH, HEIGHT) for _ in range(n_particles)]
     orbs = [GlowOrb(WIDTH, HEIGHT) for _ in range(n_orbs)]
+
+    # Initialize scenes for character animation
+    if script:
+        scenes = split_into_scenes(script)
+    else:
+        scenes = [{'text': '', 'type': 'person_happy'}]
+    n_scenes = len(scenes)
+    scene_duration = duration / n_scenes
 
     total_frames = int(duration * FPS)
 
@@ -267,16 +276,22 @@ def generate_background_video(duration: float, output_path: str) -> str:
             for p in particles:
                 p.update(1.0 / FPS)
                 if not p.alive():
-                    # Respawn
                     particles[particles.index(p)] = Particle(WIDTH, HEIGHT)
 
             # 3. Draw orbs (gentle pulsing glow)
             _draw_particles_on_frame(img, particles, orbs, t)
 
-            # 4. Subtle scanlines
+            # 4. Character animation overlay
+            scene_idx = min(int(t / scene_duration), n_scenes - 1)
+            scene = scenes[scene_idx]
+            local_t = t - scene_idx * scene_duration
+            char_frame = render_scene_frame(scene, local_t, scene_duration)
+            img = Image.alpha_composite(img, char_frame)
+
+            # 5. Subtle scanlines
             _draw_scanlines(img, 0.02)
 
-            # 5. Vignette (dark edges)
+            # 6. Vignette (dark edges)
             _draw_vignette(img)
 
             # Convert RGBA → RGB for FFmpeg
@@ -594,9 +609,10 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
 
     log.info(f"Audio duration: {audio_duration:.1f}s")
 
-    # Step 1: Generate animated background
+    # Step 1: Generate animated background with characters
     bg_path = os.path.join(work_dir, f"{base}_bg.mp4")
-    bg_result = generate_background_video(audio_duration + 2, bg_path)
+    script_text = script_data.get("script", "")
+    bg_result = generate_background_video(audio_duration + 2, bg_path, script=script_text)
 
     if not bg_result:
         log.warning("Background generation failed, using solid color fallback")
