@@ -286,16 +286,16 @@ def _extract_keywords(script: str) -> List[str]:
 
     # Always add some engaging visual keywords (satisfying/mesmerizing footage)
     generic = [
-        "satisfying loop abstract",
-        "city night time lapse lights",
-        "person walking alone street cinematic",
-        "ocean waves aerial beautiful",
-        "neon lights city cyberpunk",
-        "nature timelapse clouds mountains",
-        "person thinking deep thought dark",
-        "space stars galaxy beautiful",
-        "rain on window cozy mood",
-        "fire flames mesmerizing close up",
+        "satisfying loop abstract neon",
+        "city night time lapse driving",
+        "person walking alone cinematic dark",
+        "ocean waves aerial beautiful blue",
+        "neon lights city cyberpunk street",
+        "nature timelapse clouds stunning",
+        "space stars galaxy cinematic",
+        "rain on window cozy moody",
+        "fire flames mesmerizing close up slow",
+        "underwater bubbles colorful light",
     ]
 
     # Merge found + generic, remove duplicates

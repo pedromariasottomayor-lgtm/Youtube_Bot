@@ -21,7 +21,7 @@ VOICES = {
 }
 
 SELECTED_VOICE = VOICES["male_us"]   # ← Change this to pick a different voice
-SPEECH_RATE    = "+0%"               # Speed: "-10%" slower, "+10%" faster
+SPEECH_RATE    = "+8%"               # Slightly faster = urgency + fits 25-35s sweet spot
 SPEECH_PITCH   = "+0Hz"             # Pitch: "-5Hz" lower, "+5Hz" higher
 
 
