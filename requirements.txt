@@ -12,6 +12,9 @@ gTTS>=2.5.0
 moviepy==1.0.3
 pillow>=10.0.0
 
+# ── Stock footage download (Pexels API) ──
+requests>=2.31.0
+
 # ── YouTube API ──
 google-auth-oauthlib>=1.2.0
 google-api-python-client>=2.120.0
