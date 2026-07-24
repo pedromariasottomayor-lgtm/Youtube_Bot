@@ -34,7 +34,30 @@ CATEGORIES = {
 }
 DEFAULT_CATEGORY = CATEGORIES["education"]  # ← Change this for your niche
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+SCOPES = ["https://www.googleapis.com/auth/youtube.force-ssl"]
+
+
+def reauthenticate():
+    """
+    Re-authenticate with full YouTube scope (needed for thumbnail upload).
+    Run this locally, then update YOUTUBE_TOKEN_B64 in GitHub secrets.
+    """
+    from google_auth_oauthlib.flow import InstalledAppFlow
+
+    if not os.path.exists(CLIENT_SECRETS_FILE):
+        log.error(f"Missing {CLIENT_SECRETS_FILE}")
+        return False
+
+    flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
+    credentials = flow.run_local_server(port=0)
+
+    with open(TOKEN_PICKLE_FILE, "wb") as f:
+        pickle.dump(credentials, f)
+
+    log.info(f"Re-authenticated! Token saved to {TOKEN_PICKLE_FILE}")
+    log.info("Now update YOUTUBE_TOKEN_B64 in GitHub secrets:")
+    log.info(f"  base64 -w 0 {TOKEN_PICKLE_FILE}")
+    return True
 
 
 def get_authenticated_service():
