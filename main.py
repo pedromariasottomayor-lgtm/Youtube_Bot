@@ -1,15 +1,16 @@
 """
 YouTube Automation Bot - Main Pipeline
 Runs all steps: Script → Voiceover → Video → Upload
-Now with 500+ topics and auto-generation!
+Posts 3x/day via GitHub Actions cron.
 """
 
 import os
 import sys
 import json
+import glob
 import logging
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Import all modules
 from scripts.generate_script import generate_script
@@ -49,105 +50,76 @@ except ImportError:
         "5 cognitive biases that control your decisions",
     ]
 
-# ─── AUTO-GENERATE NEW TOPICS ────────────────────────────────────
-def generate_new_topic_with_ai():
-    """Use Gemini API to generate a new unique topic."""
-    try:
-        from scripts.generate_script import GEMINI_API_KEY, get_gemini_url
-        import urllib.request
-        import urllib.error
-        
-        if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
-            return None
-            
-        prompt = """Generate ONE unique YouTube Shorts topic about psychology, human behavior, or mind-blowing facts.
-
-Rules:
-- Must be catchy and make people want to click
-- Must be about psychology, brain, behavior, relationships, or human nature
-- Must be different from these recent topics: """ + ", ".join(random.sample(TOPICS, min(5, len(TOPICS)))) + """
-- Format: Short phrase, no period at the end
-- Maximum 15 words
-- Return ONLY the topic text, nothing else
-
-Examples of good topics:
-- The dark secret behind every people pleaser
-- Why your brain creates anxiety for no reason
-- The psychological reason you fear success
-- Why intelligent people are harder to brainwash
-- The body language trick that reveals hidden attraction"""
-
-        payload = json.dumps({
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": 0.9,
-                "maxOutputTokens": 100,
-            }
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
-            get_gemini_url("gemini-2.0-flash-lite"),
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST"
-        )
-
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            topic = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-            # Clean up the topic
-            topic = topic.strip('"').strip("'").strip(".")
-            if len(topic) > 5 and len(topic) < 100:
-                log.info(f"AI generated new topic: {topic}")
-                return topic
-    except Exception as e:
-        log.warning(f"Failed to generate topic with AI: {e}")
-    return None
+STATE_FILE = "state.json"
 
 
-def get_next_topic():
-    """Get the next topic - from database or AI-generated."""
-    state_file = "state.json"
-    if os.path.exists(state_file):
-        with open(state_file) as f:
-            state = json.load(f)
-    else:
-        state = {"index": 0, "ai_topics_used": 0}
-    
-    # Every 10 topics, try to generate one with AI
-    if state["index"] % 10 == 0 and state["index"] > 0:
-        ai_topic = generate_new_topic_with_ai()
-        if ai_topic:
-            state["ai_topics_used"] = state.get("ai_topics_used", 0) + 1
-            with open(state_file, "w") as f:
-                json.dump(state, f)
-            return ai_topic
-    
-    # Use topic from database
-    topic_index = state["index"] % len(TOPICS)
-    topic = TOPICS[topic_index]
-    
-    # Advance to next topic
-    state["index"] = state["index"] + 1
-    with open(state_file, "w") as f:
-        json.dump(state, f)
-    
+def _load_state() -> dict:
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE) as f:
+            return json.load(f)
+    return {"index": 0, "videos_today": 0, "today": "", "total_uploaded": 0, "history": []}
+
+
+def _save_state(state: dict):
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f, indent=2)
+
+
+def get_next_topic() -> str:
+    """Get the next topic from database. Never repeats within the same batch."""
+    state = _load_state()
+
+    # Reset daily counter
+    today = datetime.now().strftime("%Y-%m-%d")
+    if state.get("today") != today:
+        state["today"] = today
+        state["videos_today"] = 0
+
+    # Skip already-used topics in history
+    used = set(state.get("history", [])[-100:])  # Last 100 topics
+    available = [t for t in TOPICS if t not in used]
+    if not available:
+        # All topics used, reset history
+        state["history"] = []
+        available = TOPICS
+
+    topic = random.choice(available)
+
+    state["index"] = state.get("index", 0) + 1
+    state["history"] = state.get("history", []) + [topic]
+    _save_state(state)
+
     return topic
 
 
-def run_pipeline(topic: str):
+def cleanup_old_files():
+    """Remove old video/audio files to save disk space (keep last 3)."""
+    for pattern in ["output/video_*.mp4", "output/video_*.mp3", "output/video_*.ass",
+                    "output/stock_*.mp4", "output/video_*_bg.mp4"]:
+        files = sorted(glob.glob(pattern))
+        for f in files[:-3]:
+            try:
+                os.remove(f)
+                log.info(f"Cleaned up: {f}")
+            except OSError:
+                pass
+
+
+def run_pipeline(topic: str) -> bool:
     log.info(f"=== Starting pipeline for: {topic} ===")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     base_name = f"output/video_{timestamp}"
+    os.makedirs("output", exist_ok=True)
 
     # Step 1: Generate Script
-    log.info("Step 1: Generating script with AI...")
+    log.info("Step 1: Generating script...")
     script_data = generate_script(topic)
     if not script_data:
         log.error("Script generation failed. Aborting.")
         return False
     
     log.info(f"Title: {script_data['title']}")
+    log.info(f"Script length: {len(script_data['script'].split())} words")
 
     # Step 2: Generate Voiceover
     log.info("Step 2: Generating voiceover...")
@@ -160,8 +132,8 @@ def run_pipeline(topic: str):
     # Step 3: Generate Video
     log.info("Step 3: Creating video...")
     video_path = f"{base_name}.mp4"
-    success = generate_video(script_data, audio_path, video_path)
-    if not success:
+    result = generate_video(script_data, audio_path, video_path)
+    if not result:
         log.error("Video generation failed. Aborting.")
         return False
 
@@ -174,8 +146,17 @@ def run_pipeline(topic: str):
         tags=script_data["tags"],
         thumbnail_path=script_data.get("thumbnail_path")
     )
+
     if video_id:
-        log.info(f"SUCCESS! Video uploaded: https://youtube.com/watch?v={video_id}")
+        log.info(f"SUCCESS! Video uploaded: https://youtube.com/shorts/{video_id}")
+        # Update state
+        state = _load_state()
+        state["videos_today"] = state.get("videos_today", 0) + 1
+        state["total_uploaded"] = state.get("total_uploaded", 0) + 1
+        state["last_video_id"] = video_id
+        state["last_upload"] = datetime.now().isoformat()
+        _save_state(state)
+        cleanup_old_files()
         return True
     else:
         log.error("Upload failed.")
@@ -183,6 +164,20 @@ def run_pipeline(topic: str):
 
 
 if __name__ == "__main__":
+    state = _load_state()
+    today = datetime.now().strftime("%Y-%m-%d")
+    if state.get("today") != today:
+        state["today"] = today
+        state["videos_today"] = 0
+        _save_state(state)
+
+    videos_today = state.get("videos_today", 0)
+    log.info(f"Videos uploaded today: {videos_today}/3")
+
+    if videos_today >= 3:
+        log.info("Daily upload limit reached. Skipping.")
+        sys.exit(0)
+
     topic = get_next_topic()
     success = run_pipeline(topic)
     sys.exit(0 if success else 1)
