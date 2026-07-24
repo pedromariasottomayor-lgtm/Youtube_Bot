@@ -20,13 +20,13 @@ VOICES = {
     "male_au":     "en-AU-WilliamNeural",    # Australian male
 }
 
-SELECTED_VOICE = VOICES["male_us"]   # ← Change this to pick a different voice
-SPEECH_RATE    = "+8%"               # Slightly faster = urgency + fits 25-35s sweet spot
-SPEECH_PITCH   = "+0Hz"             # Pitch: "-5Hz" lower, "+5Hz" higher
+SELECTED_VOICE = "en-US-AndrewNeural"  # Most energetic/enthusiastic male voice
+SPEECH_RATE    = "+15%"               # Fast = urgency + fits 30-40s sweet spot
+SPEECH_PITCH   = "+2Hz"              # Slight lift = more enthusiasm
 
 
 async def _generate_async(text: str, output_path: str) -> bool:
-    """Internal async function to generate speech."""
+    """Internal async function to generate speech with sentence-level timestamps."""
     try:
         import edge_tts
         communicate = edge_tts.Communicate(
@@ -35,7 +35,26 @@ async def _generate_async(text: str, output_path: str) -> bool:
             rate=SPEECH_RATE,
             pitch=SPEECH_PITCH
         )
-        await communicate.save(output_path)
+        # Stream to get both audio + timestamps
+        submaker = edge_tts.SubMaker()
+        audio_data = b""
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_data += chunk["data"]
+            elif chunk["type"] == "SentenceBoundary":
+                submaker.feed(chunk)
+
+        with open(output_path, "wb") as f:
+            f.write(audio_data)
+
+        # Save SRT timestamps alongside audio for subtitle sync
+        srt_path = output_path.rsplit(".", 1)[0] + ".srt"
+        srt_content = submaker.get_srt()
+        if srt_content:
+            with open(srt_path, "w", encoding="utf-8") as f:
+                f.write(srt_content)
+            log.info(f"Timestamps saved: {srt_path}")
+
         size_kb = os.path.getsize(output_path) / 1024
         log.info(f"Voiceover saved: {output_path} ({size_kb:.1f} KB)")
         return True

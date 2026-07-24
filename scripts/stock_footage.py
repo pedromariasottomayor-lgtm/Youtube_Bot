@@ -202,6 +202,78 @@ def get_stock_for_script(script: str, work_dir: str, audio_duration: float) -> L
     return clips
 
 
+def download_pixabay_clips(work_dir: str, audio_duration: float, count: int = 4) -> List[str]:
+    """Download free gameplay/satisfying clips from Pixabay (no API key needed)."""
+    import requests as req
+
+    queries = [
+        "satisfying loop abstract neon",
+        "parkour running urban",
+        "colorful candy falling",
+        "neon tunnel light speed",
+        "marble run satisfying",
+        "subway train station moving",
+        "city night time lapse driving",
+        "fire flames mesmerizing close up",
+        "underwater bubbles colorful",
+        "smoke colored powder explosion",
+        "ink water abstract beautiful",
+        "aurora borealis timelapse",
+    ]
+    random.shuffle(queries)
+
+    clips = []
+    for i, query in enumerate(queries[:count * 2]):
+        if len(clips) >= count:
+            break
+        try:
+            resp = req.get(
+                "https://pixabay.com/api/videos/",
+                params={"q": query.replace(" ", "+"), "per_page": 3, "min_width": 720},
+                timeout=15
+            )
+            if resp.status_code != 200:
+                continue
+            hits = resp.json().get("hits", [])
+            if not hits:
+                continue
+            video = random.choice(hits)
+            vids = video.get("videos", {})
+            vid = vids.get("medium") or vids.get("large") or vids.get("small")
+            if not vid or not vid.get("url"):
+                continue
+            raw_path = os.path.join(work_dir, f"pixabay_raw_{len(clips)}.mp4")
+            r = req.get(vid["url"], stream=True, timeout=60)
+            r.raise_for_status()
+            with open(raw_path, "wb") as f:
+                for chunk in r.iter_content(8192):
+                    f.write(chunk)
+            # Crop to vertical
+            cropped = os.path.join(work_dir, f"pixabay_{len(clips)}.mp4")
+            cmd = [
+                "ffmpeg", "-y", "-i", raw_path,
+                "-vf", "crop=ih*9/16:ih:(iw-ih*9/16)/2:0,scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black",
+                "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+                "-an", "-pix_fmt", "yuv420p", cropped
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            if result.returncode == 0 and os.path.exists(cropped):
+                clips.append(cropped)
+                log.info(f"Pixabay clip {len(clips)}: {query}")
+                try:
+                    os.remove(raw_path)
+                except OSError:
+                    pass
+            else:
+                clips.append(raw_path)
+        except Exception as e:
+            log.debug(f"Pixabay failed for '{query}': {e}")
+            continue
+
+    log.info(f"Downloaded {len(clips)} Pixabay clips")
+    return clips
+
+
 def _extract_keywords(script: str) -> List[str]:
     """Extract visual keywords from script for stock footage search."""
     # Map script topics to visual search terms
@@ -285,10 +357,10 @@ def _extract_keywords(script: str) -> List[str]:
             found_keywords.append(keyword_map[word_clean])
 
     # Always add some engaging visual keywords (satisfying/mesmerizing footage)
+    # These are the "visual hook" clips that keep people watching
     generic = [
         "satisfying loop abstract neon",
         "city night time lapse driving",
-        "person walking alone cinematic dark",
         "ocean waves aerial beautiful blue",
         "neon lights city cyberpunk street",
         "nature timelapse clouds stunning",
@@ -296,6 +368,17 @@ def _extract_keywords(script: str) -> List[str]:
         "rain on window cozy moody",
         "fire flames mesmerizing close up slow",
         "underwater bubbles colorful light",
+        "kinetic sand cutting satisfying",
+        "smoke colored powder explosion slow",
+        "light painting abstract colorful",
+        "water drops macro beautiful",
+        "aurora borealis northern lights timelapse",
+        "hot air balloon festival colorful sky",
+        "coffee pour slow motion aesthetic",
+        "ink in water beautiful abstract",
+        "string lights bokeh night aesthetic",
+        "cherry blossom petals falling beautiful",
+        "wave crash ocean cinematic slow",
     ]
 
     # Merge found + generic, remove duplicates

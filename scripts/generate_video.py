@@ -60,21 +60,101 @@ def _format_ass_time(seconds):
     return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
 
 
-def generate_ass_subtitles(script: str, audio_duration: float, output_path: str):
-    """Generate ASS subtitles with word-level karaoke timing and BigWord emphasis."""
+def _parse_srt_timestamps(srt_path: str) -> list:
+    """Parse SRT file from edge-tts into list of {start, end, text} dicts."""
+    import re
+    timestamps = []
+    try:
+        with open(srt_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Split by double newline (SRT blocks)
+        blocks = re.split(r"\n\n+", content.strip())
+        for block in blocks:
+            lines = block.strip().split("\n")
+            if len(lines) < 3:
+                continue
+            # Line 2: timestamps
+            time_match = re.match(
+                r"(\d{2}):(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[.,](\d{3})",
+                lines[1]
+            )
+            if not time_match:
+                continue
+            g = time_match.groups()
+            start = int(g[0]) * 3600 + int(g[1]) * 60 + int(g[2]) + int(g[3]) / 1000
+            end = int(g[4]) * 3600 + int(g[5]) * 60 + int(g[6]) + int(g[7]) / 1000
+            text = " ".join(lines[2:]).strip()
+            if text:
+                timestamps.append({"start": start, "end": end, "text": text})
+    except Exception as e:
+        log.warning(f"Failed to parse SRT: {e}")
+    return timestamps
+
+
+def _build_chunks_from_timestamps(timestamps: list, all_words: list, audio_duration: float) -> list:
+    """Build subtitle chunks using real edge-tts sentence timestamps."""
+    chunks = []
+    word_idx = 0
+
+    for ts in timestamps:
+        sentence_words = ts["text"].split()
+        sentence_dur = ts["end"] - ts["start"]
+        if sentence_dur <= 0:
+            continue
+
+        # Split sentence into 2-4 word chunks for karaoke effect
+        chunk_size = max(2, min(4, len(sentence_words) // 2))
+        for i in range(0, len(sentence_words), chunk_size):
+            cw = sentence_words[i:i + chunk_size]
+            progress = i / max(1, len(sentence_words))
+            chunk_start = ts["start"] + progress * sentence_dur
+            chunk_end = ts["start"] + min(1.0, (i + chunk_size) / max(1, len(sentence_words))) * sentence_dur
+            chunks.append({
+                "text": " ".join(cw),
+                "start": chunk_start,
+                "end": chunk_end,
+            })
+
+    # Fill any gap at the end
+    if chunks and chunks[-1]["end"] < audio_duration - 0.5:
+        chunks.append({
+            "text": "...",
+            "start": chunks[-1]["end"],
+            "end": audio_duration,
+        })
+
+    return chunks if chunks else [{"text": " ".join(all_words), "start": 0, "end": audio_duration}]
+
+
+def generate_ass_subtitles(script: str, audio_duration: float, output_path: str, srt_path: str = None):
+    """Generate ASS subtitles using edge-tts timestamps when available, with BigWord emphasis."""
+    # Try to load real timestamps from edge-tts SRT
+    real_timestamps = []
+    if srt_path and os.path.exists(srt_path):
+        real_timestamps = _parse_srt_timestamps(srt_path)
+
     words = script.split()
     if not words:
         return
 
-    words_per_sec = len(words) / audio_duration if audio_duration > 0 else 3.0
-    chunk_size = max(2, min(5, int(words_per_sec * 1.2)))
-    chunks = []
-    for i in range(0, len(words), chunk_size):
-        chunk_words = words[i:i + chunk_size]
-        chunks.append(" ".join(chunk_words))
+    if real_timestamps and len(real_timestamps) >= 3:
+        log.info(f"Using {len(real_timestamps)} real timestamps from edge-tts")
+        chunks = _build_chunks_from_timestamps(real_timestamps, words, audio_duration)
+    else:
+        log.info("No real timestamps, estimating from word count")
+        words_per_sec = len(words) / audio_duration if audio_duration > 0 else 3.0
+        chunk_size = max(2, min(5, int(words_per_sec * 1.2)))
+        chunks = []
+        for i in range(0, len(words), chunk_size):
+            chunk_words = words[i:i + chunk_size]
+            chunks.append({
+                "text": " ".join(chunk_words),
+                "start": i * (audio_duration / len(words)),
+                "end": min((i + chunk_size) * (audio_duration / len(words)), audio_duration),
+            })
 
     n_chunks = len(chunks)
-    chunk_dur = audio_duration / n_chunks if n_chunks > 0 else audio_duration
 
     header = """[Script Info]
 Title: MindRank Subtitles
@@ -96,23 +176,21 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     events = []
     for i, chunk in enumerate(chunks):
-        start = i * chunk_dur
-        end = start + chunk_dur
+        start = chunk["start"]
+        end = chunk["end"]
         start_t = _format_ass_time(start)
         end_t = _format_ass_time(end)
 
-        words_in_chunk = chunk.split()
+        words_in_chunk = chunk["text"].split()
         if not words_in_chunk:
             continue
 
         big_word = max(words_in_chunk, key=len)
+        chunk_dur = end - start
         karaoke_parts = []
         for w in words_in_chunk:
             w_dur = int(chunk_dur * 100 / len(words_in_chunk))
-            if w == big_word:
-                karaoke_parts.append(f"{{\\kf{w_dur}}}{w}")
-            else:
-                karaoke_parts.append(f"{{\\kf{w_dur}}}{w}")
+            karaoke_parts.append(f"{{\\kf{w_dur}}}{w}")
         karaoke_text = " ".join(karaoke_parts)
 
         events.append(
@@ -365,7 +443,7 @@ def _generate_gameplay_bg(output_path: str, duration: float):
                 elif otype == "barrier":
                     draw.rectangle([ox - 35, oy - 55, ox + 35, oy + 5],
                                  fill=ocolor, outline=(255, 255, 255))
-                    draw.rectangle([ox - 5, oy - 55, ox + 5, oy - 75],
+                    draw.rectangle([ox - 5, oy - 75, ox + 5, oy - 55],
                                  fill=(200, 200, 200))
                 else:
                     draw.rectangle([ox - 40, oy + 5, ox + 40, oy + 15],
@@ -501,6 +579,41 @@ def _generate_character_bg(script: str, audio_duration: float, output_path: str)
 
 
 # ══════════════════════════════════════════════════════════════════
+#  REAL STOCK FOOTAGE (pre-downloaded clips in assets/gameplay/)
+# ══════════════════════════════════════════════════════════════════
+
+def _pick_real_footage_clip(output_path: str, duration: float) -> str:
+    """Pick a random pre-downloaded stock clip and loop it to match duration."""
+    assets_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "gameplay")
+    if not os.path.exists(assets_dir):
+        return ""
+
+    clips = [os.path.join(assets_dir, f) for f in os.listdir(assets_dir) if f.endswith(".mp4")]
+    if not clips:
+        return ""
+
+    chosen = random.choice(clips)
+    log.info(f"Using real footage: {os.path.basename(chosen)}")
+
+    cmd = [
+        "ffmpeg", "-y", "-stream_loop", "-1", "-i", chosen,
+        "-t", str(duration),
+        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+        "-an", "-pix_fmt", "yuv420p",
+        output_path
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if result.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 5000:
+            size_kb = os.path.getsize(output_path) / 1024
+            log.info(f"Real footage ready: {output_path} ({size_kb:.0f} KB)")
+            return output_path
+    except Exception as e:
+        log.warning(f"Real footage failed: {e}")
+    return ""
+
+
+# ══════════════════════════════════════════════════════════════════
 #  MAIN VIDEO COMPOSITION
 # ══════════════════════════════════════════════════════════════════
 
@@ -542,10 +655,10 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
         audio_duration = 25.0
     log.info(f"Audio duration: {audio_duration:.1f}s")
 
-    # Choose mode: stock (40%), gameplay (35%), characters (25%)
+    # Choose mode: real footage (40%), stock (25%), characters (20%), gameplay (15%)
     mode = random.choices(
-        ["stock", "gameplay", "characters"],
-        weights=[40, 35, 25],
+        ["real_footage", "stock", "characters", "gameplay"],
+        weights=[40, 25, 20, 15],
         k=1
     )[0]
     log.info(f"Video mode: {mode}")
@@ -555,6 +668,12 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
     stock_clips = []
 
     # Step 1: Create background — ALWAYS guarantee visible video
+    if mode == "real_footage":
+        bg_path = _pick_real_footage_clip(bg_path, audio_duration + 1)
+        if not bg_path or not os.path.exists(bg_path):
+            bg_path = os.path.join(work_dir, f"{base}_bg.mp4")
+            mode = "stock"
+
     if mode == "stock":
         stock_clips = get_stock_for_script(script_text, work_dir, audio_duration)
         if stock_clips and len(stock_clips) >= 2:
@@ -595,7 +714,8 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
 
     # Step 3: Generate ASS subtitles
     ass_path = os.path.join(work_dir, f"{base}.ass")
-    generate_ass_subtitles(script_text, audio_duration, ass_path)
+    srt_path = audio_path.rsplit(".", 1)[0] + ".srt"
+    generate_ass_subtitles(script_text, audio_duration, ass_path, srt_path=srt_path)
 
     # Step 4: Composite final video (background + subtitles + audio)
     log.info("Compositing final video...")
