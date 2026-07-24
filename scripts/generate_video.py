@@ -313,6 +313,11 @@ def _generate_character_bg(script: str, audio_duration: float, output_path: str)
         scene_duration = audio_duration / n_scenes if n_scenes > 0 else audio_duration
 
         for frame_idx in range(total_frames):
+            # Check if FFmpeg is still alive
+            if proc.poll() is not None:
+                log.warning(f"FFmpeg exited early at frame {frame_idx}/{total_frames}")
+                break
+
             t = frame_idx / fps
             scene_idx = min(int(t / scene_duration), n_scenes - 1)
             scene = scenes[scene_idx]
@@ -320,29 +325,39 @@ def _generate_character_bg(script: str, audio_duration: float, output_path: str)
 
             frame = render_scene_frame(scene, local_t, scene_duration)
 
-            # Composite onto dark background (characters use RGBA with transparent bg)
+            # Composite onto dark background
             from PIL import Image as PILImage
             bg = PILImage.new("RGB", (CHAR_W, CHAR_H), (10, 10, 21))
             bg.paste(frame, (0, 0), frame)
 
             try:
                 proc.stdin.write(bg.tobytes())
-            except BrokenPipeError:
-                log.warning(f"FFmpeg pipe broke at frame {frame_idx}/{total_frames}")
+            except (BrokenPipeError, OSError) as e:
+                log.warning(f"FFmpeg pipe error at frame {frame_idx}: {e}")
                 break
 
             if frame_idx % (fps * 10) == 0 and frame_idx > 0:
                 log.info(f"  Characters: frame {frame_idx}/{total_frames}")
 
-        if proc.stdin and not proc.stdin.closed:
-            proc.stdin.close()
-        stdout, stderr = proc.communicate(timeout=60)
+        # Close pipe carefully
+        try:
+            if proc.stdin and not proc.stdin.closed:
+                proc.stdin.close()
+        except (BrokenPipeError, OSError):
+            pass
 
-        if proc.returncode == 0 and os.path.exists(output_path):
+        try:
+            stdout, stderr = proc.communicate(timeout=30)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            stdout, stderr = proc.communicate()
+
+        if proc.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 1000:
             size_kb = os.path.getsize(output_path) / 1024
             log.info(f"Character animation saved: {output_path} ({size_kb:.0f} KB)")
         else:
-            log.error(f"Character FFmpeg error: {stderr.decode()[:300]}")
+            err_msg = stderr.decode()[:300] if stderr else "unknown error"
+            log.warning(f"Character FFmpeg failed (rc={proc.returncode}): {err_msg}")
             _generate_animated_bg(output_path, audio_duration + 1)
 
     except Exception as e:
