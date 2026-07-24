@@ -313,34 +313,65 @@ def generate_script_offline(topic: str) -> dict:
 
 
 def _generate_viral_title(topic: str) -> str:
-    """Generate a clickbait title from topic — no prefixes, maximum impact."""
-    templates = [
-        "This {topic} fact will change how you see everything",
-        "Nobody tells you this about {topic}",
-        "Your brain is lying about {topic}",
-        "The dark truth about {topic} they hiding from you",
-        "I can't believe {topic} is actually this messed up",
-        "Stop believing this about {topic}",
-        "Scientists can't explain why {topic} works like this",
-        "You've been wrong about {topic} your whole life",
-        "{topic}? The answer will shock you",
-        "This {topic} secret is buried for a reason",
+    """Generate a clickbait title — standalone, never awkward phrasing."""
+    # Standalone titles that work for any topic
+    titles = [
+        "This brain trick changes everything",
+        "Your mind is lying to you right now",
+        "97% of people don't know this",
+        "This changes how you see everyone",
+        "The secret nobody will tell you",
+        "Your body is warning you right now",
+        "Stop believing this immediately",
+        "Scientists can't explain this",
+        "This is why you feel empty",
+        "The truth they're hiding from you",
+        "Watch this before it's too late",
+        "Your brain does this every morning",
+        "This simple trick exposed everything",
+        "Why smart people are more lonely",
+        "The psychology trick that actually works",
+        "You've been doing this wrong your whole life",
+        "This is why you attract toxic people",
+        "Your phone is rewiring your brain",
+        "The friendship rule nobody teaches you",
+        "This one habit is destroying you",
+        "Dark psychology facts they won't teach you",
+        "Why overthinking is actually a superpower",
+        "The body language secret that reveals everything",
+        "This is why you can't focus anymore",
+        "Your worst habit is actually genetic",
     ]
 
-    topic_clean = topic.lower().strip()
-    # Remove common prefixes
-    for prefix in ["the ", "why ", "how ", "what ", "top 5 ", "top 10 ", "5 ", "10 "]:
-        if topic_clean.startswith(prefix):
-            topic_clean = topic_clean[len(prefix):]
-            break
+    # Try to make a topic-relevant title
+    topic_lower = topic.lower()
+    topic_titles = {
+        "brain": ["Your brain betrays you every single day"],
+        "manipulat": ["This manipulation trick works on everyone"],
+        "narcissist": ["How to spot a narcissist in 10 seconds"],
+        "friendship": ["The friendship rule that changes everything"],
+        "body": ["Your body is screaming at you right now"],
+        "love": ["This is why you keep choosing wrong"],
+        "fear": ["Your fear is lying to you"],
+        "success": ["The success myth that's ruining you"],
+        "people": ["3 types of people you need to avoid"],
+        "phone": ["Your phone is destroying your brain"],
+        "dark": ["The dark truth about human nature"],
+        "secret": ["A secret that changes everything"],
+        "trust": ["Why trust is the biggest lie"],
+        "emotion": ["Your emotions are not what you think"],
+        "decision": ["Your decisions are being controlled"],
+        "toxic": ["How to escape toxic people forever"],
+        "habit": ["The habit loop you can't break"],
+        "genius": ["Why geniurs are always misunderstood"],
+        "energy": ["Protect your energy from these people"],
+    }
 
-    title = random.choice(templates).format(topic=topic_clean.title())
+    for keyword, alt_titles in topic_titles.items():
+        if keyword in topic_lower:
+            return random.choice(alt_titles)
 
-    # Ensure max 60 chars
-    if len(title) > 60:
-        title = title[:57] + "..."
-
-    return title
+    return random.choice(titles)
 
 
 if __name__ == "__main__":
