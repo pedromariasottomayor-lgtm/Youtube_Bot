@@ -82,7 +82,7 @@ def _pick_best_video(videos: List[Dict], min_duration: float = 3.0) -> Optional[
                     "width": width,
                     "height": height,
                     "duration": duration,
-                    "quality": f.get("quality", ""),
+                    "quality": f.get("quality") or "",
                     "video_id": video.get("id", 0),
                 })
 
@@ -97,7 +97,7 @@ def _pick_best_video(videos: List[Dict], min_duration: float = 3.0) -> Optional[
                         "width": f.get("width", 0),
                         "height": f.get("height", 0),
                         "duration": video.get("duration", 0),
-                        "quality": f.get("quality", ""),
+                        "quality": f.get("quality") or "",
                         "video_id": video.get("id", 0),
                     })
 
@@ -105,7 +105,7 @@ def _pick_best_video(videos: List[Dict], min_duration: float = 3.0) -> Optional[
         return None
 
     # Prefer HD quality
-    hd = [c for c in candidates if "hd" in c.get("quality", "").lower() or c["height"] >= 1080]
+    hd = [c for c in candidates if "hd" in str(c.get("quality") or "").lower() or c["height"] >= 1080]
     if hd:
         return random.choice(hd)
     return random.choice(candidates)
