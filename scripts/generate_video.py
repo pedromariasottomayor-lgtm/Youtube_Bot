@@ -281,43 +281,27 @@ def _generate_animated_bg(output_path: str, duration: float):
 # ══════════════════════════════════════════════════════════════════
 
 def _generate_character_bg(script: str, audio_duration: float, output_path: str):
-    """Render character frames with DARK BACKGROUND and pipe to FFmpeg."""
+    """Render character frames to temp JPEGs then encode with FFmpeg image2.
+
+    Piping raw 1080x1920 frames overflows the 64KB pipe buffer.
+    Writing temp files is slower but 100% reliable.
+    """
+    import shutil
+    import tempfile
+    from PIL import Image as PILImage
     from scripts.characters import split_into_scenes, render_scene_frame, W as CHAR_W, H as CHAR_H
 
     fps = 15
     total_frames = int(audio_duration * fps)
-    log.info(f"Rendering {total_frames} character frames at {fps}fps...")
+    log.info(f"Rendering {total_frames} character frames at {fps}fps (temp files)...")
 
-    cmd = [
-        "ffmpeg", "-y",
-        "-f", "rawvideo",
-        "-pix_fmt", "rgba",
-        "-s", f"{CHAR_W}x{CHAR_H}",
-        "-r", str(fps),
-        "-i", "pipe:0",
-        "-c:v", "libx264",
-        "-preset", "ultrafast",
-        "-crf", "26",
-        "-pix_fmt", "yuv420p",
-        "-t", str(audio_duration + 0.5),
-        output_path
-    ]
-
-    proc = None
+    tmp_dir = tempfile.mkdtemp(prefix="charframes_")
     try:
-        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
-
         scenes = split_into_scenes(script)
         n_scenes = len(scenes)
         scene_duration = audio_duration / n_scenes if n_scenes > 0 else audio_duration
 
         for frame_idx in range(total_frames):
-            # Check if FFmpeg is still alive
-            if proc.poll() is not None:
-                log.warning(f"FFmpeg exited early at frame {frame_idx}/{total_frames}")
-                break
-
             t = frame_idx / fps
             scene_idx = min(int(t / scene_duration), n_scenes - 1)
             scene = scenes[scene_idx]
@@ -325,49 +309,39 @@ def _generate_character_bg(script: str, audio_duration: float, output_path: str)
 
             frame = render_scene_frame(scene, local_t, scene_duration)
 
-            # Composite onto dark background
-            from PIL import Image as PILImage
             bg = PILImage.new("RGB", (CHAR_W, CHAR_H), (10, 10, 21))
             bg.paste(frame, (0, 0), frame)
 
-            try:
-                proc.stdin.write(bg.tobytes())
-            except (BrokenPipeError, OSError) as e:
-                log.warning(f"FFmpeg pipe error at frame {frame_idx}: {e}")
-                break
+            bg.save(os.path.join(tmp_dir, f"frame_{frame_idx:05d}.jpg"), "JPEG", quality=85)
 
             if frame_idx % (fps * 10) == 0 and frame_idx > 0:
                 log.info(f"  Characters: frame {frame_idx}/{total_frames}")
 
-        # Close pipe carefully
-        try:
-            if proc.stdin and not proc.stdin.closed:
-                proc.stdin.close()
-        except (BrokenPipeError, OSError):
-            pass
+        log.info(f"All {total_frames} frames saved. Encoding with FFmpeg...")
 
-        try:
-            stdout, stderr = proc.communicate(timeout=30)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            stdout, stderr = proc.communicate()
+        cmd = [
+            "ffmpeg", "-y",
+            "-framerate", str(fps),
+            "-i", os.path.join(tmp_dir, "frame_%05d.jpg"),
+            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+            "-pix_fmt", "yuv420p",
+            "-t", str(audio_duration + 0.5),
+            output_path
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
-        if proc.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 1000:
+        if result.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 1000:
             size_kb = os.path.getsize(output_path) / 1024
             log.info(f"Character animation saved: {output_path} ({size_kb:.0f} KB)")
         else:
-            err_msg = stderr.decode()[:300] if stderr else "unknown error"
-            log.warning(f"Character FFmpeg failed (rc={proc.returncode}): {err_msg}")
+            log.warning(f"Character FFmpeg encode failed (rc={result.returncode}): {result.stderr[:300]}")
             _generate_animated_bg(output_path, audio_duration + 1)
 
     except Exception as e:
         log.error(f"Character render failed: {e}")
-        if proc and proc.stdin and not proc.stdin.closed:
-            try:
-                proc.stdin.close()
-            except Exception:
-                pass
         _generate_animated_bg(output_path, audio_duration + 1)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 # ══════════════════════════════════════════════════════════════════
