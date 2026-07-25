@@ -168,7 +168,6 @@ PlayResY: 1920
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Default,Arial Black,72,&H00FFFFFF,&H000000FF,&H00000000,&H96000000,-1,0,0,0,100,100,1,0,1,4,2,2,50,50,580,1
-Style: BigWord,Arial Black,88,&H0000FFFF,&H000000FF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,4.5,2.5,8,50,50,120,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -185,7 +184,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         if not words_in_chunk:
             continue
 
-        big_word = max(words_in_chunk, key=len)
         chunk_dur = end - start
         karaoke_parts = []
         for w in words_in_chunk:
@@ -193,13 +191,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             karaoke_parts.append(f"{{\\kf{w_dur}}}{w}")
         karaoke_text = " ".join(karaoke_parts)
 
+        # Only bottom karaoke subtitles — no BigWord at top
         events.append(
             f"Dialogue: 0,{start_t},{end_t},Default,,0,0,0,,{karaoke_text}"
-        )
-
-        big_dur = int(chunk_dur * 40)
-        events.append(
-            f"Dialogue: 1,{start_t},{end_t},BigWord,,0,0,0,,{{\\fad(200,200)\\pos(540,180)\\kf{big_dur}}}{big_word}"
         )
 
     with open(output_path, "w", encoding="utf-8") as f:
