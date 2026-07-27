@@ -1,1 +1,11 @@
-{"index": 6}
+{
+  "index": 6,
+  "videos_today": 0,
+  "today": "",
+  "total_uploaded": 0,
+  "history": [],
+  "uploaded_videos": [],
+  "used_topics": [],
+  "last_video_id": "",
+  "last_upload": ""
+}

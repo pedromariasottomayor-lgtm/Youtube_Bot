@@ -57,7 +57,17 @@ def _load_state() -> dict:
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
             return json.load(f)
-    return {"index": 0, "videos_today": 0, "today": "", "total_uploaded": 0, "history": []}
+    return {
+        "index": 0,
+        "videos_today": 0,
+        "today": "",
+        "total_uploaded": 0,
+        "history": [],
+        "uploaded_videos": [],
+        "used_topics": [],
+        "last_video_id": "",
+        "last_upload": ""
+    }
 
 
 def _save_state(state: dict):
@@ -75,18 +85,20 @@ def get_next_topic() -> str:
         state["today"] = today
         state["videos_today"] = 0
 
-    # Skip already-used topics in history
-    used = set(state.get("history", [])[-100:])  # Last 100 topics
+    # Skip already-used topics in history (last 500 topics)
+    used = set(state.get("used_topics", [])[-500:])
     available = [t for t in TOPICS if t not in used]
+    
     if not available:
         # All topics used, reset history
-        state["history"] = []
+        state["used_topics"] = []
         available = TOPICS
+        log.info("All topics used! Resetting history.")
 
     topic = random.choice(available)
 
     state["index"] = state.get("index", 0) + 1
-    state["history"] = state.get("history", []) + [topic]
+    state["used_topics"] = state.get("used_topics", []) + [topic]
     _save_state(state)
 
     return topic
@@ -120,6 +132,7 @@ def run_pipeline(topic: str) -> bool:
     
     log.info(f"Title: {script_data['title']}")
     log.info(f"Script length: {len(script_data['script'].split())} words")
+    log.info(f"Hook formula: {script_data.get('hook_formula', 'unknown')}")
 
     # Step 2: Generate Voiceover
     log.info("Step 2: Generating voiceover...")
@@ -155,6 +168,13 @@ def run_pipeline(topic: str) -> bool:
         state["total_uploaded"] = state.get("total_uploaded", 0) + 1
         state["last_video_id"] = video_id
         state["last_upload"] = datetime.now().isoformat()
+        state["uploaded_videos"] = state.get("uploaded_videos", []) + [{
+            "video_id": video_id,
+            "title": script_data["title"],
+            "topic": topic,
+            "upload_time": datetime.now().isoformat(),
+            "hook_formula": script_data.get("hook_formula", "unknown"),
+        }]
         _save_state(state)
         cleanup_old_files()
         return True
