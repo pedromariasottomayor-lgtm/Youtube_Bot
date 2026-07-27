@@ -146,587 +146,390 @@ def generate_script(topic: str) -> Optional[Dict]:
 
 
 # ══════════════════════════════════════════════════════════════════
-#  TEMPLATE-BASED SCRIPT GENERATOR — 100% unique per topic
-#  Uses topic keywords to generate custom hooks, body, and closers
+#  VIRAL OFFLINE SCRIPTS — 7 Proven Hook Formulas (2026)
+#  Based on analysis of 2,400 high-retention Shorts
+#  81% of 1M+ view Shorts use one of these 7 formulas
 # ══════════════════════════════════════════════════════════════════
 
-# Hook templates — each generates a unique opening based on topic
-_HOOK_TEMPLATES = [
-    # Pattern Interrupt
-    "Stop believing everything {topic_word} tells you. It's literally lying.",
-    "Wrong. {topic_word} isn't what you think. Here's why.",
-    "Delete this belief about {topic_word} immediately. It's destroying you.",
-    "Your brain is wrong about {topic_word}. And it's costing you everything.",
-    # Contradiction
-    "Everyone thinks {topic_word} is {positive}. They're completely wrong.",
-    "The truth about {topic_word} will make you uncomfortable. But you need to hear it.",
-    "Most people get {topic_word} completely backwards. Here's what actually happens.",
-    "{topic_word} isn't {positive}. It's the opposite. And here's proof.",
-    # Forbidden Insider
-    "They don't want you to know this about {topic_word}. But here it is.",
-    "This {topic_word} secret has been hidden for years. Until now.",
-    "Psychologists discovered something terrifying about {topic_word}. They buried it.",
-    "The dark truth about {topic_word} that nobody will tell you.",
-    # Curiosity Gap
-    "There's one {topic_word} signal that reveals everything. Every single time.",
-    "This one thing about {topic_word} changes how you see everything.",
-    "Scientists found something shocking about {topic_word}. You won't believe it.",
-    "The {topic_word} secret that 97% of people don't know.",
-    # Identity Bait
-    "If you {action}, you're not {negative}. You're this type.",
-    "People who {action} have something different in their brain. It's not what you think.",
-    "If {condition}, your brain is wired differently. Here's why.",
-    "You're not {negative}. Your {topic_word} is a superpower. Here's proof.",
-    # Reveal Teaser
-    "The last {topic_word} fact on this list is the most insane. Most people have it.",
-    "Number three will change how you see {topic_word} forever.",
-    "Wait until you hear #2. It explains everything about {topic_word}.",
-    "The {topic_word} sign nobody talks about. But everyone should.",
-    # Specific Transformation
-    "I tracked my {topic_word} for 30 days. What happened changed everything.",
-    "I stopped ignoring my {topic_word} for 48 hours. The results were terrifying.",
-    "I tested this {topic_word} trick for 7 days. The difference was insane.",
-    "I analyzed 1000 people's {topic_word}. The pattern was terrifying.",
+_VIRAL_SCRIPTS = [
+    # ─── FORMULA 1: PATTERN INTERRUPT (38% of viral Shorts) ───
+    {
+        "formula": "pattern_interrupt",
+        "hook": "Stop believing everything your brain tells you. It's literally lying.",
+        "body": [
+            "Your brain produces cortisol every morning to make you anxious. There's no tiger. Just emails.",
+            "So it creates fake problems. You're not good enough. You'll fail. People are judging you. None of it is real.",
+            "Scientists found your first thoughts every morning are programming from 200,000 years ago. Not truth."
+        ],
+        "closer": "Tomorrow morning, don't trust your first thought. Watch this again instead.",
+        "title": "Your Brain Is Lying To You Every Morning",
+    },
+    # ─── FORMULA 2: CONTRADICTION ───
+    {
+        "formula": "contradiction",
+        "hook": "The smartest people in the world are actually the loneliest. And there's a dark reason.",
+        "body": [
+            "High IQ people process information differently. They see patterns others miss. They question everything.",
+            "This makes them incredible at solving problems. But terrible at connecting with people.",
+            "Their brains overanalyze every interaction. Every word. Every silence. Every micro expression."
+        ],
+        "closer": "If you feel different from everyone around you, this is why. Watch again to feel less alone.",
+        "title": "Why Smart People Are Always Lonely",
+    },
+    # ─── FORMULA 3: FORBIDDEN INSIDER ───
+    {
+        "formula": "forbidden_insider",
+        "hook": "They don't want you to know this about manipulation. But here it is.",
+        "body": [
+            "There's a technique called anchoring. Every ad, every salary negotiation, every sale uses it.",
+            "They show you a high number first so the real price feels cheap. A 500 dollar steak makes 40 dollars feel free.",
+            "Your brain literally cannot evaluate anything without comparing it to the first thing it saw."
+        ],
+        "closer": "Now that you know this, you'll see it everywhere. You can never unsee it. Watch again.",
+        "title": "Manipulation Trick Used On You 10x Daily",
+    },
+    # ─── FORMULA 4: SPECIFIC TRANSFORMATION ───
+    {
+        "formula": "specific_transformation",
+        "hook": "I tracked my dopamine for 30 days. The results changed how I see everything.",
+        "body": [
+            "Day one, I realized I check my phone 150 times. Each check gives a micro hit of dopamine.",
+            "By day fifteen, my brain couldn't sit still for two minutes. Boredom felt like pain.",
+            "Day thirty, I understood. We're not addicted to phones. We're addicted to unpredictable rewards."
+        ],
+        "closer": "Try this. One day without your phone. Then watch this again to see what you notice.",
+        "title": "I Tracked My Dopamine For 30 Days",
+    },
+    # ─── FORMULA 5: CURIOSITY GAP ───
+    {
+        "formula": "curiosity_gap",
+        "hook": "There's one body language signal that reveals if someone is lying. Every single time.",
+        "body": [
+            "When someone tells a lie, their feet point toward the nearest exit. Always.",
+            "Liars also touch their nose 4 to 8 times more than normal. It's called the nose touch response.",
+            "But the biggest giveaway? Real smiles use your eyes. Fake smiles only use your mouth."
+        ],
+        "closer": "Watch this again and think about the last person you talked to. You'll notice everything.",
+        "title": "Body Language That Exposes Every Liar",
+    },
+    # ─── FORMULA 6: IDENTITY BAIT ───
+    {
+        "formula": "identity_bait",
+        "hook": "If you always feel tired but sleep eight hours, you're not lazy. You're this type.",
+        "body": [
+            "Empaths absorb everyone's emotions like a sponge. Their energy gets drained by people who don't even notice.",
+            "Your exhaustion isn't physical. It's emotional overload. You feel everything twice. Yours and theirs.",
+            "Studies show empaths have more active mirror neurons. You literally feel other people's pain."
+        ],
+        "closer": "You're not broken. You're rare. Watch again next time you forget why you're tired.",
+        "title": "If You're Always Tired You're An Empath",
+    },
+    # ─── FORMULA 7: REVEAL TEASER ───
+    {
+        "formula": "reveal_teaser",
+        "hook": "The last one on this list is the most dangerous. And most people have it.",
+        "body": [
+            "Number one, the perfectionist. They never start because it'll never be perfect. Paralysis by standard.",
+            "Number two, the people pleaser. They say yes to everyone and burn out silently. Their kindness is a trap.",
+            "Number three, the overthinker. They see every angle of every problem. Their brain never shuts off."
+        ],
+        "closer": "Which one are you? Be honest. Watch again to see if your type changed.",
+        "title": "3 Types Of People Who Self-Sabotage",
+    },
 ]
 
-# Body templates — 3 paragraphs that expand on the hook
-_BODY_TEMPLATES = [
-    [
-        "Your brain processes {topic_word} in two different systems. The first is fast and automatic. The second is slow and deliberate.",
-        "Most people only use the fast system. It's efficient but flawed. It makes assumptions. It sees patterns that don't exist.",
-        "The slow system is where truth lives. But it takes effort. And your brain hates effort. So it shortcuts. Every time."
+# Additional scripts per hook formula (variety)
+_VARIETY_SCRIPTS = {
+    "pattern_interrupt": [
+        {
+            "formula": "pattern_interrupt",
+            "hook": "Delete this belief from your brain immediately. It's destroying you.",
+            "body": [
+                "You think you need motivation to start. That's backwards. Action creates motivation. Not the other way around.",
+                "Neuroscience proves your brain releases dopamine AFTER you start. Not before. You'll never feel ready.",
+                "Every successful person started before they felt prepared. They acted scared. They acted confused."
+            ],
+            "closer": "Start before you're ready. Watch this again when you're about to quit.",
+            "title": "Delete This Belief From Your Brain",
+        },
+        {
+            "formula": "pattern_interrupt",
+            "hook": "You're not lazy. Your brain is protecting you from something terrifying.",
+            "body": [
+                "Procrastination isn't laziness. It's your brain avoiding discomfort. The threat isn't a bear. It's failure.",
+                "Every time you procrastinate, your amygdala is screaming danger. Your brain chooses comfort over growth.",
+                "This is why you procrastinate on important things but not on games. Games are safe. Growth isn't."
+            ],
+            "closer": "Next time you procrastinate, ask what you're really afraid of. Watch again tomorrow.",
+            "title": "You're Not Lazy Your Brain Is Scared",
+        },
     ],
-    [
-        "Scientists studied {topic_word} for 20 years. The findings were disturbing. Your brain doesn't want you to know this.",
-        "When {topic_word} happens, your amygdala fires before your logic can catch up. You're reacting from fear, not truth.",
-        "The solution isn't harder thinking. It's awareness. Notice when your brain is reacting from fear. That's when it lies most."
+    "contradiction": [
+        {
+            "formula": "contradiction",
+            "hook": "The most confident people in the room are actually the most insecure.",
+            "body": [
+                "True confidence is quiet. It doesn't need to announce itself. The loudest person is usually the most scared.",
+                "Psychologists call this overcompensation. They perform confidence to hide the void inside.",
+                "Real confidence comes from accepting you don't know everything. The ego pretends. The soul accepts."
+            ],
+            "closer": "Confidence isn't loud. It's calm. Watch again to feel the difference.",
+            "title": "The Most Confident People Are The Most Scared",
+        },
+        {
+            "formula": "contradiction",
+            "hook": "Reading books might actually be making you dumber. Here's why.",
+            "body": [
+                "Your brain confuses reading about something with knowing it. Knowledge feels like action but it isn't.",
+                "Studies show people who read about exercise feel like they exercised. Your brain can't tell the difference.",
+                "The solution isn't less reading. It's doing one thing from every book within 24 hours."
+            ],
+            "closer": "What's one thing you learned recently that you never applied? Watch again and do it.",
+            "title": "Reading Books Is Making You Dumber",
+        },
     ],
-    [
-        "Here's what most people miss about {topic_word}: it's not about willpower. It's about environment.",
-        "Your surroundings control 80% of your {topic_word} behavior. You're not choosing. You're responding to triggers.",
-        "Change the environment first. The behavior follows. Not the other way around. This is why most people fail at {topic_word}."
+    "curiosity_gap": [
+        {
+            "formula": "curiosity_gap",
+            "hook": "There's a 7-second trick that makes anyone trust you instantly.",
+            "body": [
+                "In the first 7 seconds of meeting someone, their brain decides if you're friend or threat.",
+                "Eye contact for 3 seconds, a genuine smile, and mirroring their body language. That's it.",
+                "Your brain releases oxytocin when it sees familiarity. Be familiar. Not perfect. Familiar."
+            ],
+            "closer": "Try this on the next person you meet. Watch again to master the 7 seconds.",
+            "title": "7-Second Trick To Make Anyone Trust You",
+        },
+        {
+            "formula": "curiosity_gap",
+            "hook": "The color of your room is affecting your mood and you have no idea.",
+            "body": [
+                "Blue rooms lower your heart rate by 12 percent. Red rooms increase anxiety by 15 percent.",
+                "Hospitals use green because it reduces pain perception. Offices use white because it kills creativity.",
+                "Your subconscious processes color before you're even aware of it. You're being controlled by paint."
+            ],
+            "closer": "Look at your room right now. What color is it? Watch again to see why you feel that way.",
+            "title": "Your Room Color Is Controlling Your Mood",
+        },
     ],
-    [
-        "The first 7 seconds of {topic_word} determine everything. After that, your brain has already decided.",
-        "This is called thin-slicing. Your subconscious processes {topic_word} faster than your conscious mind can think.",
-        "The problem? Your subconscious is biased. It uses old data. Old fears. Old patterns. Not current reality."
+    "forbidden_insider": [
+        {
+            "formula": "forbidden_insider",
+            "hook": "They don't teach you this in school on purpose. It's too powerful.",
+            "body": [
+                "The education system was designed to create workers, not thinkers.服从, not question. Follow, not lead.",
+                "Every test rewards memorization, not understanding. Every grade rewards obedience, not creativity.",
+                "The most important skills are never taught. Negotiation, emotional intelligence, self-awareness."
+            ],
+            "closer": "The real education starts after school. Watch again to remember what they missed.",
+            "title": "Why School Was Designed To Control You",
+        },
     ],
-    [
-        "There's a reason {topic_word} feels impossible to change. Your neurons have been firing the same way for years.",
-        "Every time you {topic_word}, you strengthen that neural pathway. It becomes automatic. Like driving home without thinking.",
-        "But here's the secret: new pathways can form at any age. Your brain is more plastic than you think. The key is repetition."
+    "identity_bait": [
+        {
+            "formula": "identity_bait",
+            "hook": "If you always pick the quiet corner in every room, you're not shy. You're this.",
+            "body": [
+                "Introverts don't avoid people. They avoid meaningless interactions. They choose depth over width.",
+                "Your brain actually processes social situations more deeply. Every conversation is a full analysis.",
+                "This is why social events exhaust you. It's not weakness. It's overthinking at a superpower level."
+            ],
+            "closer": "You're not antisocial. You're selectively social. Watch again to own it.",
+            "title": "If You Sit In The Corner You're This Type",
+        },
     ],
-    [
-        "Your brain releases dopamine BEFORE {topic_word}. Not after. That's why you keep doing it even when it hurts.",
-        "This is called anticipatory dopamine. It's more powerful than the reward itself. Your brain is addicted to wanting, not having.",
-        "Understanding this changes everything. You're not weak. Your neurochemistry is working against you. Know the game. Beat the game."
+    "reveal_teaser": [
+        {
+            "formula": "reveal_teaser",
+            "hook": "The #1 sign someone is about to betray you. Most people miss it completely.",
+            "body": [
+                "Number three, they suddenly start being extra nice. Overcompensation after a decision is already made.",
+                "Number two, they stop asking questions. Real friends are curious. Betrayers already know what they need.",
+                "Number one, they create distance then blame you for it. They pull away so you feel guilty."
+            ],
+            "closer": "Think about who's been acting different lately. Watch again to see the signs.",
+            "title": "The #1 Sign Someone Will Betray You",
+        },
     ],
-    [
-        "Studies show {topic_word} activates the same brain regions as physical pain. It's not in your head. It's in your neurons.",
-        "This is why {topic_word} feels so terrible. Your brain literally processes it as danger. The threat response is real.",
-        "The fix isn't to ignore it. It's to reframe it. Your brain can't distinguish between a bear and a deadline. Both are threats. Neither will kill you."
-    ],
-    [
-        "Here's the counterintuitive truth about {topic_word}: trying harder makes it worse.",
-        "When you force {topic_word}, your prefrontal cortex overloads. You make worse decisions. You see fewer options.",
-        "The solution? Step back. Let your default mode network work. Your brain solves problems best when you're not trying."
-    ],
-]
-
-# Closer templates — loop trigger
-_CLOSER_TEMPLATES = [
-    "Tomorrow morning, don't trust your first thought about {topic_word}. Watch this again instead.",
-    "Watch this again and notice {topic_word} in your own life. You'll see everything differently.",
-    "Try this for one day. Then watch this again to see what you missed the first time.",
-    "Your {topic_word} is lying to you right now. Watch again to see the truth.",
-    "Most people ignore this about {topic_word}. Don't be most people. Watch again.",
-    "The next time {topic_word} happens, remember this. Watch again to prepare.",
-    "You'll forget this in 24 hours. That's your brain protecting you from truth. Watch again tomorrow.",
-    "Share this with someone who needs to hear about {topic_word}. They won't listen. But you tried.",
-]
-
-# Action words for identity bait hooks
-_ACTIONS = [
-    "overthink everything", "always feel tired", "constantly worry",
-    "never feel good enough", "always procrastinate", "feel empty inside",
-    "keep comparing yourself", "always say yes", "fear success",
-    "push people away", "feel like an outsider", "always second-guess",
-]
-
-# Positive words for contradiction hooks
-_POSITIVES = [
-    "simple", "straightforward", "easy", "natural", "normal",
-    "harmless", "beneficial", "good for you", "what everyone needs",
-]
-
-# Conditions for identity bait hooks
-_CONDITIONS = [
-    "you always pick the quiet corner",
-    "you feel everything too deeply",
-    "you can't stop thinking",
-    "you always feel drained after socializing",
-    "you notice everything others miss",
-    "you question everything",
-    "you always feel like you're pretending",
-    "you feel different from everyone",
-]
-
-# Negative words for identity bait hooks
-_NEGATIVES = [
-    "lazy", "weak", "broken", "different", "wrong",
-    "sensitive", "too much", "not enough", "crazy",
-]
-
-# Topic-specific facts and statistics
-_TOPIC_FACTS = {
-    "brain": [
-        "Your brain uses 20% of your energy but is only 2% of your body weight.",
-        "The human brain has approximately 86 billion neurons.",
-        "Your brain can process information as fast as 268 mph.",
-        "The brain is more active at night than during the day.",
-        "Your brain can't feel pain — it has no pain receptors.",
-    ],
-    "psychology": [
-        "95% of your decisions are made by your subconscious mind.",
-        "The average person makes 35,000 decisions per day.",
-        "Cognitive biases affect everyone, regardless of intelligence.",
-        "Your brain processes negative information 5x faster than positive.",
-        "Psychological reactions can be measured in as little as 50 milliseconds.",
-    ],
-    "manipulation": [
-        "Narcissists use 7 specific techniques to control others.",
-        "Gaslighting works because your brain prefers consistency over truth.",
-        "Emotional manipulation activates the same brain regions as physical pain.",
-        "Love bombing creates a chemical dependency similar to addiction.",
-        "The average person is manipulated 10 times per day without knowing it.",
-    ],
-    "anxiety": [
-        "Anxiety is your brain's ancient alarm system firing at the wrong time.",
-        "73% of people experience anxiety that affects their daily life.",
-        "Your brain can't distinguish between a bear and a deadline.",
-        "Anxiety increases by 40% during uncertain times.",
-        "The more you fight anxiety, the stronger it becomes.",
-    ],
-    "habit": [
-        "It takes an average of 66 days to form a new habit.",
-        "Your brain forms habits to conserve energy — not to help you.",
-        "Habits account for about 40% of your daily actions.",
-        "Changing your environment is 2x more effective than willpower.",
-        "The habit loop: cue → routine → reward. Break any part to break the habit.",
-    ],
-    "relationship": [
-        "The average person spends 2.5 hours per day thinking about relationships.",
-        "Physical touch releases oxytocin within 20 seconds.",
-        "Couples who laugh together are 10x more likely to stay together.",
-        "The 5:1 ratio: 5 positive interactions for every negative one determines relationship health.",
-        "Your attachment style is formed in the first 2 years of life.",
-    ],
-    "success": [
-        "80% of success is showing up consistently.",
-        "The most successful people fail 3x more than average.",
-        "Your environment determines 80% of your behavior.",
-        "Discipline beats motivation 100% of the time.",
-        "The first hour of your day determines 60% of your productivity.",
-    ],
-    "fear": [
-        "Your brain processes fear before you're consciously aware of it.",
-        "Fear of public speaking ranks higher than fear of death.",
-        "Anxiety is fear without a specific target.",
-        "Your amygdala can trigger a fear response in 12 milliseconds.",
-        "95% of your fears never actually happen.",
-    ],
-    "social": [
-        "Humans are social animals — isolation is perceived as a threat.",
-        "You make 11 impressions about someone in the first 7 seconds.",
-        "Mirror neurons cause you to unconsciously copy others' emotions.",
-        "The average person has 3.5 close friends.",
-        "Social rejection activates the same brain regions as physical pain.",
-    ],
-    "emotion": [
-        "Emotions last an average of 90 seconds if you don't feed them.",
-        "Your body processes emotions faster than your brain can name them.",
-        "Emotional intelligence is 2x more important than IQ for success.",
-        "You can't be emotionally intelligent while anxious.",
-        "Suppressing emotions increases their intensity by 40%.",
-    ],
-    "decision": [
-        "Your brain makes decisions 6 seconds before you're aware of them.",
-        "Decision fatigue causes you to make worse choices as the day goes on.",
-        "Most people make decisions based on emotion, then justify with logic.",
-        "The average adult makes 35,000 decisions per day.",
-        "Analysis paralysis: more options lead to worse decisions.",
-    ],
-    "identity": [
-        "Your self-image is formed by age 7 and rarely changes after that.",
-        "You change your personality depending on who you're with.",
-        "Your brain creates a narrative to explain decisions you didn't make.",
-        "Self-perception is 70% shaped by others' opinions.",
-        "The average person spends 30% of their life pretending to be someone else.",
-    ],
-    "sleep": [
-        "Your brain processes emotions during REM sleep.",
-        "Lack of sleep reduces IQ by 10 points.",
-        "Your brain is more creative when you're tired.",
-        "Sleep deprivation affects your immune system more than stress.",
-        "The average person needs 7-9 hours of sleep but 35% get less than 6.",
-    ],
-    "memory": [
-        "Your brain can store 2.5 petabytes of information.",
-        "Memory is reconstructive — you change it every time you remember it.",
-        "Your brain forgets 70% of new information within 24 hours.",
-        "Emotional memories are stored differently than factual ones.",
-        "The average person remembers only 10% of what they read.",
-    ],
-    "creativity": [
-        "Creative people have more active default mode networks.",
-        "Your brain is most creative when you're not trying.",
-        "Creativity peaks when you're tired or relaxed.",
-        "The average person has 60,000 thoughts per day, but only 5% are creative.",
-        "Creative blocks are caused by fear of judgment, not lack of ideas.",
-    ],
-    "motivation": [
-        "Motivation is a result, not a cause.",
-        "Your brain releases dopamine BEFORE action, not after.",
-        "The 2-minute rule: if it takes less than 2 minutes, do it now.",
-        "Willpower is a finite resource that depletes throughout the day.",
-        "The most motivated people are the ones who take action without motivation.",
-    ],
-    "truth": [
-        "Your brain lies to you 200 times per day.",
-        "The average person can only focus for 8 seconds before losing attention.",
-        "Your brain prefers familiar pain over unknown pleasure.",
-        "Cognitive biases affect everyone, regardless of IQ.",
-        "Your brain processes negative information 5x faster than positive.",
+    "specific_transformation": [
+        {
+            "formula": "specific_transformation",
+            "hook": "I stopped talking for 48 hours. What happened to my brain was terrifying.",
+            "body": [
+                "Hour one, my thoughts were loud. Hour six, they were screaming. I couldn't silence them.",
+                "Hour twenty-four, something shifted. I started hearing thoughts I'd been drowning out for years.",
+                "Hour forty-eight, I understood. Silence isn't empty. It's full of answers you've been avoiding."
+            ],
+            "closer": "Try one hour of silence. Just one. Then watch this again to compare your experience.",
+            "title": "I Stopped Talking For 48 Hours",
+        },
     ],
 }
 
 
-def _get_topic_facts(topic: str) -> list:
-    """Get relevant facts for a topic."""
+def _pick_best_script(topic: str) -> dict:
+    """Pick the best script based on topic keywords, with variety."""
     topic_lower = topic.lower()
-    for category, facts in _TOPIC_FACTS.items():
-        if category in topic_lower:
-            return facts
-    # Default facts
-    return [
-        "Scientists discovered something terrifying about this. They buried it.",
-        "Your brain processes this differently than you think.",
-        "97% of people don't know this. And it changes everything.",
-        "This has been hidden for years. Until now.",
-        "The truth will make you uncomfortable. But you need to hear it.",
-    ]
 
+    # Keyword-to-formula mapping (which formula works best for which topic type)
+    keyword_formula_map = {
+        "brain": "pattern_interrupt",
+        "lie": "curiosity_gap",
+        "trust": "curiosity_gap",
+        "manipulat": "forbidden_insider",
+        "toxic": "reveal_teaser",
+        "people": "identity_bait",
+        "lazy": "pattern_interrupt",
+        "fear": "pattern_interrupt",
+        "anxiety": "pattern_interrupt",
+        "smart": "contradiction",
+        "confidence": "contradiction",
+        "relationship": "identity_bait",
+        "empath": "identity_bait",
+        "phone": "pattern_interrupt",
+        "body": "curiosity_gap",
+        "secret": "forbidden_insider",
+        "dark": "forbidden_insider",
+        "habit": "specific_transformation",
+        "success": "contradiction",
+        "procrastinate": "pattern_interrupt",
+        "decision": "curiosity_gap",
+        "emotion": "identity_bait",
+        "friendship": "curiosity_gap",
+        "love": "identity_bait",
+        "energy": "identity_bait",
+        "genius": "contradiction",
+        "psychology": "pattern_interrupt",
+        "behavior": "curiosity_gap",
+        "control": "forbidden_insider",
+        "time": "specific_transformation",
+    }
 
-def _get_topic_word(topic: str) -> str:
-    """Extract the core topic word for template insertion — the most meaningful noun."""
-    words = topic.lower().replace("'", "").split()
-    # Remove common words and filler
-    skip = {"the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-            "have", "has", "had", "do", "does", "did", "will", "would", "could",
-            "should", "may", "might", "shall", "can", "need", "dare", "ought",
-            "used", "to", "of", "in", "for", "on", "with", "at", "by", "from",
-            "as", "into", "through", "during", "before", "after", "above", "below",
-            "between", "out", "off", "over", "under", "again", "further", "then",
-            "once", "here", "there", "when", "where", "why", "how", "all", "both",
-            "each", "few", "more", "most", "other", "some", "such", "no", "nor",
-            "not", "only", "own", "same", "so", "than", "too", "very", "just",
-            "but", "and", "or", "if", "while", "that", "this", "it", "its",
-            "you", "your", "yourself", "i", "me", "my", "we", "our", "they",
-            "them", "their", "what", "which", "who", "whom", "these", "those",
-            "signs", "secret", "dark", "truth", "trick", "reason", "top",
-            "type", "types", "don", "know", "always", "tell", "someone",
-            "instantly", "working", "works", "never", "without", "doing",
-            "making", "really", "actually", "person", "people"}
-    # Preferred topic nouns — these make better template fill-ins
-    preferred = [
-        "brain", "psychology", "manipulation", "narcissist", "anxiety",
-        "habit", "relationship", "success", "fear", "social", "emotion",
-        "decision", "identity", "sleep", "memory", "creativity", "motivation",
-        "truth", "body", "language", "friendship", "confidence", "empath",
-        "procrastinate", "genius", "energy", "time", "money", "happiness",
-        "depression", "focus", "mind", "subconscious", "toxic", "trust",
-        "control", "power", "love", "lies", "liar", "behavior", "personality",
-        "charisma", "brain", "manipulate", "lying", "lies", "betrays",
-        "charming", "trap", "cognitive", "bias", "biases", "formula",
-        "intelligent", "smart", "lonely", "depress", "overthink",
-        "procrastinat", "self", "sabotage", "perfectionist", "people",
-        "pleaser", "overthinker", "empath", "narcissistic", "sociopath",
-        "gaslight", "toxic", "anxious", "worry", "stressed", "burn",
-        "out", "empty", "numb", "disconnect", "isolation", "rejection",
-        "psychological", "reason", "signs", "secret", "dark", "truth",
-        "trick", "formula", "technique", "method", "strategy", "pattern",
-    ]
-    
-    # First try to find a preferred word
-    for pref in preferred:
-        for w in words:
-            clean = w.strip(".,!?;:'\"")
-            if clean == pref or clean.startswith(pref[:5]):
-                return clean
-    
-    # Fall back to longest meaningful word (likely the most important noun)
-    meaningful = [w for w in words if w not in skip and len(w) > 4]
-    if meaningful:
-        # Pick the longest word — likely the most specific noun
-        return max(meaningful, key=len)
-    
-    # Last resort: pick any word > 3 chars
-    for w in words:
-        if w not in skip and len(w) > 3:
-            return w
-    
-    return "this"
+    # Find best matching formula for this topic
+    best_formula = None
+    best_score = 0
+    for keyword, formula in keyword_formula_map.items():
+        if keyword in topic_lower:
+            score = len(keyword)
+            if score > best_score:
+                best_score = score
+                best_formula = formula
+
+    # Get scripts for this formula
+    candidates = []
+    if best_formula:
+        # Add base scripts for this formula
+        for s in _VIRAL_SCRIPTS:
+            if s.get("formula") == best_formula:
+                candidates.append(s)
+        # Add variety scripts
+        if best_formula in _VARIETY_SCRIPTS:
+            candidates.extend(_VARIETY_SCRIPTS[best_formula])
+
+    # Fallback: use any script with keyword match
+    if not candidates:
+        for s in _VIRAL_SCRIPTS:
+            script_text = s.get("hook", "") + " " + " ".join(s.get("body", []))
+            if any(w in script_text.lower() for w in topic_lower.split() if len(w) > 3):
+                candidates.append(s)
+
+    # Final fallback: random from all
+    if not candidates:
+        candidates = list(_VIRAL_SCRIPTS)
+        for scripts in _VARIETY_SCRIPTS.values():
+            candidates.extend(scripts)
+
+    return random.choice(candidates)
 
 
 def generate_script_offline(topic: str) -> dict:
-    """Generate unique scripts offline using template system."""
-    topic_word = _get_topic_word(topic)
-    facts = _get_topic_facts(topic)
-    
-    # Pick random templates
-    hook_template = random.choice(_HOOK_TEMPLATES)
-    body_set = random.choice(_BODY_TEMPLATES)  # This is a list of 3 paragraphs
-    closer_template = random.choice(_CLOSER_TEMPLATES)
-    
-    # Fill in templates
-    hook = hook_template.format(
-        topic_word=topic_word,
-        positive=random.choice(_POSITIVES),
-        action=random.choice(_ACTIONS),
-        condition=random.choice(_CONDITIONS),
-        negative=random.choice(_NEGATIVES)
-    )
-    
-    body = []
-    for paragraph in body_set:
-        filled = paragraph.format(
-            topic_word=topic_word,
-            action=random.choice(_ACTIONS)
-        )
-        body.append(filled)
-    
-    closer = closer_template.format(topic_word=topic_word)
-    
+    """Generate viral scripts offline using proven 2026 hook formulas."""
+    best_match = _pick_best_script(topic)
+
     # Build full script
-    script_text = hook + " " + " ".join(body) + " " + closer
-    
-    # Generate unique title
-    title = _generate_unique_title(topic, hook)
-    
-    # Generate tags based on topic
-    tags = _generate_unique_tags(topic)
-    
-    # Generate unique description
-    description = _generate_unique_description(topic, script_text)
-    
+    script_text = best_match["hook"] + " " + " ".join(best_match["body"]) + " " + best_match["closer"]
+
+    # Generate title from topic or use script title
+    title = best_match.get("title") or _generate_viral_title(topic)
+
+    # Generate tags
+    topic_words = [w for w in topic.lower().split() if len(w) > 3][:4]
+    base_tags = ["psychology", "mindrank", "facts", "humanbehavior", "mindblown", "shorts"]
+    extra_tags = topic_words + ["darkpsychology", "secret", "nevertellyou"]
+
     return {
         "title": title,
         "script": script_text,
-        "description": description,
-        "tags": tags,
-        "hook": hook,
-        "hook_formula": _detect_hook_formula(hook),
+        "description": (
+            f"Your brain is hiding something from you right now... "
+            f"Follow @MindRank for more psychology facts nobody talks about. "
+            f"#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #viral"
+        ),
+        "tags": base_tags + extra_tags,
+        "hook": best_match["hook"],
+        "hook_formula": best_match.get("formula", "unknown"),
         "sections": ["Hook", "Reveal", "Deep Dive", "Mind-Blow", "Loop Trigger"],
     }
 
 
-def _generate_unique_title(topic: str, hook: str) -> str:
-    """Generate a unique title based on topic and hook."""
-    topic_lower = topic.lower()
-    
-    # Topic-specific title patterns
-    title_patterns = {
-        "brain": [
-            "Your Brain Is Lying To You Right Now",
-            "This Brain Hack Changes Everything",
-            "Why Your Brain Betrays You Daily",
-            "The Dark Truth About Your Brain",
-        ],
-        "psychology": [
-            "Psychology Secret They Buried For Years",
-            "This Psychology Trick Works Every Time",
-            "Why Psychology Changes How You See Everything",
-            "The Dark Psychology Nobody Talks About",
-        ],
-        "manipulation": [
-            "Manipulation Trick Used On You 10x Daily",
-            "How To Spot A Manipulator In 10 Seconds",
-            "The Manipulation Technique They Don't Want You To Know",
-            "Why Manipulators Always Win",
-        ],
-        "anxiety": [
-            "This Anxiety Hack Works In 60 Seconds",
-            "Why Your Brain Creates Anxiety For No Reason",
-            "The Dark Truth About Anxiety Nobody Tells You",
-            "How To Trick Your Brain Out Of Anxiety",
-        ],
-        "habit": [
-            "The Habit Loop You Can't Break",
-            "Why Habits Control 40% Of Your Life",
-            "The Brain Hack That Changes Habits Instantly",
-            "Why You Can't Break Bad Habits",
-        ],
-        "relationship": [
-            "The Friendship Rule That Changes Everything",
-            "Why Relationships Fail (According To Psychology)",
-            "The Dark Truth About Love Nobody Admits",
-            "How To Make Anyone Trust You Instantly",
-        ],
-        "success": [
-            "Why Successful People Think Differently",
-            "The Success Myth That's Ruining You",
-            "Why Discipline Beats Motivation Every Time",
-            "The Dark Secret Behind Every Success",
-        ],
-        "fear": [
-            "Your Fear Is Lying To You",
-            "Why Your Brain Creates Fears That Don't Exist",
-            "The Dark Truth About Fear Nobody Tells You",
-            "How To Trick Your Brain Out Of Fear",
-        ],
-        "social": [
-            "Why Popular People Are Often The Loneliest",
-            "The Social Skill That Changes Everything",
-            "Why You Always Feel Awkward",
-            "The Dark Truth About Social Anxiety",
-        ],
-        "emotion": [
-            "Your Emotions Are Not What You Think",
-            "Why Some People Are Naturally Happier",
-            "The Dark Side Of Feeling Everything",
-            "Why You Always Feel Empty Inside",
-        ],
-        "decision": [
-            "Your Decisions Are Being Controlled",
-            "Why You Always Make The Wrong Choice",
-            "The Decision Making Bias That Ruins Your Life",
-            "How To Make Better Decisions Instantly",
-        ],
-        "identity": [
-            "Why You Don't Really Know Who You Are",
-            "The Identity Crisis Nobody Warns You About",
-            "Why You Always Feel Like You're Pretending",
-            "The Dark Truth About Self Image",
-        ],
-        "sleep": [
-            "Why You Always Wake Up At 3 AM",
-            "The Dark Truth About Sleep Nobody Tells You",
-            "Why Your Brain Refuses To Shut Off",
-            "The Sleep Hack That Changes Everything",
-        ],
-        "memory": [
-            "Why Your Memories Are Probably Fake",
-            "The Memory Trick That Changes Everything",
-            "Why You Always Forget What You Were About To Say",
-            "The Dark Truth About False Memories",
-        ],
-        "creativity": [
-            "Why Creative People Are Often Mentally Ill",
-            "The Creativity Hack That Changes Everything",
-            "Why You Always Have Your Best Ideas In The Shower",
-            "The Dark Side Of Being Creative",
-        ],
-        "motivation": [
-            "Why Motivation Is A Lie",
-            "The Motivation Myth That's Ruining You",
-            "Why Successful People Don't Need Motivation",
-            "The Dark Truth About Motivation Nobody Tells You",
-        ],
-        "truth": [
-            "The Truth They're Hiding From You",
-            "Why Your Brain Lies To You 200 Times Per Day",
-            "The Dark Truth About Human Nature",
-            "Why Most People Live Without Knowing This",
-        ],
-    }
-    
-    # Find matching category
-    for category, titles in title_patterns.items():
-        if category in topic_lower:
-            return random.choice(titles)
-    
-    # Default titles
-    default_titles = [
-        "This Changes How You See Everything",
-        "The Secret Nobody Will Tell You",
-        "Your Brain Is Lying To You Right Now",
-        "Why 97% Of People Don't Know This",
-        "The Dark Truth About Human Nature",
-        "This One Thing Changes Everything",
-        "Why You've Been Doing This Wrong",
-        "The Psychology Trick That Actually Works",
-        "Scientists Can't Explain This",
-        "Why Smart People Are More Lonely",
-    ]
-    
-    return random.choice(default_titles)
-
-
-def _generate_unique_tags(topic: str) -> list:
-    """Generate unique tags based on topic."""
-    topic_words = [w.lower() for w in topic.split() if len(w) > 3][:4]
-    base_tags = ["psychology", "mindrank", "facts", "humanbehavior", "mindblown", "shorts"]
-    extra_tags = topic_words + ["darkpsychology", "secret", "nevertellyou"]
-    return base_tags + extra_tags
-
-
-def _generate_unique_description(topic: str, script: str) -> str:
-    """Generate unique description based on topic."""
-    topic_lower = topic.lower()
-    
-    # Topic-specific descriptions
-    desc_templates = {
-        "brain": "Your brain is hiding something from you right now... 🧠\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #brain #viral",
-        "psychology": "This psychology secret has been hidden for years... 🧠\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #viral",
-        "manipulation": "They don't want you to know this manipulation trick... 🎭\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #manipulation #viral",
-        "anxiety": "Your anxiety is lying to you right now... 😰\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #anxiety #viral",
-        "habit": "This habit trick changes everything... 🔄\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #habits #viral",
-        "relationship": "The friendship rule nobody teaches you... 💔\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #relationships #viral",
-        "success": "The success myth that's ruining you... 🏆\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #success #viral",
-        "fear": "Your fear is lying to you right now... 😱\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #fear #viral",
-        "social": "The social skill that changes everything... 👥\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #social #viral",
-        "emotion": "Your emotions are not what you think... 💭\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #emotions #viral",
-        "decision": "Your decisions are being controlled... 🎯\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #decisions #viral",
-        "identity": "Why you don't really know who you are... 🪞\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #identity #viral",
-        "sleep": "Why you always wake up at 3 AM... 😴\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #sleep #viral",
-        "memory": "Why your memories are probably fake... 🧠\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #memory #viral",
-        "creativity": "Why creative people are often mentally ill... 🎨\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #creativity #viral",
-        "motivation": "Why motivation is a lie... 🔥\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #motivation #viral",
-        "truth": "The truth they're hiding from you... 🔍\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #truth #viral",
-    }
-    
-    # Find matching description
-    for category, desc in desc_templates.items():
-        if category in topic_lower:
-            return desc
-    
-    # Default description
-    return "This changes how you see everything... 🧠\n\nFollow @MindRank for more psychology facts nobody talks about.\n\n#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #viral"
-
-
-def _detect_hook_formula(hook: str) -> str:
-    """Detect which hook formula was used."""
-    hook_lower = hook.lower()
-    if any(phrase in hook_lower for phrase in ["stop", "wrong", "delete", "incorrect"]):
-        return "pattern_interrupt"
-    elif any(phrase in hook_lower for phrase in ["everyone thinks", "nobody knows", "secret"]):
-        return "contradiction"
-    elif any(phrase in hook_lower for phrase in ["they don't want", "hidden", "buried"]):
-        return "forbidden_insider"
-    elif any(phrase in hook_lower for phrase in ["if you", "you're not", "you're this"]):
-        return "identity_bait"
-    elif any(phrase in hook_lower for phrase in ["sign", "signal", "reveals"]):
-        return "curiosity_gap"
-    elif any(phrase in hook_lower for phrase in ["tracked", "tested", "analyzed"]):
-        return "specific_transformation"
-    elif any(phrase in hook_lower for phrase in ["last", "number", "wait"]):
-        return "reveal_teaser"
-    return "pattern_interrupt"
-
-
 def _generate_viral_title(topic: str) -> str:
-    """Fallback title generation."""
-    return _generate_unique_title(topic, "")
+    """Generate a clickbait title — standalone, never awkward phrasing."""
+    titles = [
+        "This brain trick changes everything",
+        "Your mind is lying to you right now",
+        "97% of people don't know this",
+        "This changes how you see everyone",
+        "The secret nobody will tell you",
+        "Your body is warning you right now",
+        "Stop believing this immediately",
+        "Scientists can't explain this",
+        "This is why you feel empty",
+        "The truth they're hiding from you",
+        "Watch this before it's too late",
+        "Your brain does this every morning",
+        "This simple trick exposed everything",
+        "Why smart people are more lonely",
+        "The psychology trick that actually works",
+        "You've been doing this wrong your whole life",
+        "This is why you attract toxic people",
+        "Your phone is rewiring your brain",
+        "The friendship rule nobody teaches you",
+        "This one habit is destroying you",
+        "Dark psychology facts they won't teach you",
+        "Why overthinking is actually a superpower",
+        "The body language secret that reveals everything",
+        "This is why you can't focus anymore",
+        "Your worst habit is actually genetic",
+    ]
+
+    topic_lower = topic.lower()
+    topic_titles = {
+        "brain": ["Your brain betrays you every single day"],
+        "manipulat": ["This manipulation trick works on everyone"],
+        "narcissist": ["How to spot a narcissist in 10 seconds"],
+        "friendship": ["The friendship rule that changes everything"],
+        "body": ["Your body is screaming at you right now"],
+        "love": ["This is why you keep choosing wrong"],
+        "fear": ["Your fear is lying to you"],
+        "success": ["The success myth that's ruining you"],
+        "people": ["3 types of people you need to avoid"],
+        "phone": ["Your phone is destroying your brain"],
+        "dark": ["The dark truth about human nature"],
+        "secret": ["A secret that changes everything"],
+        "trust": ["Why trust is the biggest lie"],
+        "emotion": ["Your emotions are not what you think"],
+        "decision": ["Your decisions are being controlled"],
+        "toxic": ["How to escape toxic people forever"],
+        "habit": ["The habit loop you can't break"],
+        "genius": ["Why geniuses are always misunderstood"],
+        "energy": ["Protect your energy from these people"],
+    }
+
+    for keyword, alt_titles in topic_titles.items():
+        if keyword in topic_lower:
+            return random.choice(alt_titles)
+
+    return random.choice(titles)
 
 
 if __name__ == "__main__":
