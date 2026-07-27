@@ -263,6 +263,39 @@ _VARIETY_SCRIPTS = {
             "closer": "Next time you procrastinate, ask what you're really afraid of. Watch again tomorrow.",
             "title": "You're Not Lazy Your Brain Is Scared",
         },
+        {
+            "formula": "pattern_interrupt",
+            "hook": "Your phone is rewiring your brain right now. And you don't even know it.",
+            "body": [
+                "Every notification triggers a micro dose of dopamine. Your brain is learning to crave interruptions.",
+                "After just 3 days of heavy phone use, your attention span drops by 40 percent. Scientists measured it.",
+                "The worst part? Your brain starts creating phantom vibrations. It's hallucinating. From your phone."
+            ],
+            "closer": "Put your phone down for one hour tonight. Watch this again after. You'll feel the difference.",
+            "title": "Your Phone Is Rewiring Your Brain",
+        },
+        {
+            "formula": "pattern_interrupt",
+            "hook": "Stop trying to be happy. That's exactly why you're miserable.",
+            "body": [
+                "Happiness isn't a destination. It's a byproduct. Chasing it directly makes it run faster.",
+                "Studies show people who actively pursue happiness end up more depressed than those who don't.",
+                "The secret? Pursue meaning instead. Meaning endures. Happiness fades in 72 hours every time."
+            ],
+            "closer": "Stop chasing happy. Start chasing meaning. Watch again when you forget.",
+            "title": "Stop Trying To Be Happy",
+        },
+        {
+            "formula": "pattern_interrupt",
+            "hook": "Your comfort zone is killing you slowly. And it feels amazing.",
+            "body": [
+                "Comfort releases serotonin. It feels like safety. But it's actually stagnation. Your brain can't tell the difference.",
+                "Every year you stay comfortable, your risk tolerance drops by 12 percent. You become more afraid of everything.",
+                "The people who grow aren't comfortable. They're terrified. But they move anyway."
+            ],
+            "closer": "Do one thing that scares you today. Just one. Watch this again tonight.",
+            "title": "Your Comfort Zone Is Killing You",
+        },
     ],
     "contradiction": [
         {
@@ -286,6 +319,96 @@ _VARIETY_SCRIPTS = {
             ],
             "closer": "What's one thing you learned recently that you never applied? Watch again and do it.",
             "title": "Reading Books Is Making You Dumber",
+        },
+        {
+            "formula": "contradiction",
+            "hook": "Overthinking isn't a weakness. It's a superpower you're using wrong.",
+            "body": [
+                "Overthinkers process information 3x deeper than average. They see connections others miss entirely.",
+                "The problem isn't too much thinking. It's thinking without deciding. Analysis without action is just worry.",
+                "Your brain was built to solve problems. Give it a deadline. Give it a choice. Then stop."
+            ],
+            "closer": "Next time you overthink, set a 5 minute timer. Decide before it rings. Watch again.",
+            "title": "Overthinking Is Actually A Superpower",
+        },
+        {
+            "formula": "contradiction",
+            "hook": "The most successful people failed more than everyone else. Not less.",
+            "body": [
+                "Elon Musk failed 3 rockets before SpaceX succeeded. Most people quit after 1 failure.",
+                "The difference isn't talent. It's failure tolerance. Successful people treat failure as data, not identity.",
+                "Your brain processes failure as social rejection. It hurts like physical pain. But you can rewire that."
+            ],
+            "closer": "What did you fail at recently? Try again tomorrow. Watch this before you quit.",
+            "title": "Successful People Fail More Not Less",
+        },
+        {
+            "formula": "contradiction",
+            "hook": "Introverts aren't shy. They're processing the world at a deeper level.",
+            "body": [
+                "Introverts have more blood flow to the frontal lobe. The area responsible for memory and problem solving.",
+                "They don't avoid people. They avoid shallow interactions. Their brain needs time to recharge after socializing.",
+                "This is why introverts prefer texting. It gives their brain time to process before responding."
+            ],
+            "closer": "You're not antisocial. You're selectively social. Watch again to own it.",
+            "title": "Introverts Process The World Differently",
+        },
+    ],
+    "forbidden_insider": [
+        {
+            "formula": "forbidden_insider",
+            "hook": "They don't teach you this in school on purpose. It's too powerful.",
+            "body": [
+                "The education system was designed to create workers. Not thinkers. Obey, not question. Follow, not lead.",
+                "Every test rewards memorization, not understanding. Every grade rewards obedience, not creativity.",
+                "The most important skills are never taught. Negotiation, emotional intelligence, self-awareness."
+            ],
+            "closer": "The real education starts after school. Watch again to remember what they missed.",
+            "title": "Why School Was Designed To Control You",
+        },
+        {
+            "formula": "forbidden_insider",
+            "hook": "Social media is designed to make you addicted. Here's the hidden mechanism.",
+            "body": [
+                "Every app uses variable reward scheduling. The same pattern that makes slot machines addictive.",
+                "Your feed is curated by an algorithm that learned what triggers your dopamine. Not what you need.",
+                "The average person checks social media 150 times per day. Each check is a micro addiction."
+            ],
+            "closer": "Delete one app for 24 hours. Watch this again after. You'll see the difference.",
+            "title": "Social Media Is Designed To Addict You",
+        },
+        {
+            "formula": "forbidden_insider",
+            "hook": "Your government doesn't want you to know this about sleep. But I'm telling you anyway.",
+            "body": [
+                "Sleep deprivation reduces your IQ by 10 points. More than marijuana. Scientists proved it.",
+                "After 17 hours without sleep, your cognitive function equals a blood alcohol level of 0.05.",
+                "Most societies are designed to make you sleep less. Earlier starts. Later ends. More productivity."
+            ],
+            "closer": "Tonight, sleep 8 hours. No exceptions. Watch this again if you're tempted to stay up.",
+            "title": "The Sleep Secret They Don't Want You To Know",
+        },
+        {
+            "formula": "forbidden_insider",
+            "hook": "The food industry is hiding something in your food. And it's legal.",
+            "body": [
+                "Over 60 percent of packaged foods contain added sugar. Even the ones that say healthy.",
+                "Sugar activates the same brain regions as cocaine. Your brain literally can't tell the difference.",
+                "Food companies spend billions on flavor engineering. They hire neuroscientists to make food addictive."
+            ],
+            "closer": "Read the next food label you pick up. Watch this again when you're at the store.",
+            "title": "What The Food Industry Hides From You",
+        },
+        {
+            "formula": "forbidden_insider",
+            "hook": "They're tracking everything you do online. And you gave them permission.",
+            "body": [
+                "Every app on your phone collects data. Your location, your contacts, your behavior patterns.",
+                "They sell this data to advertisers who target you with surgical precision. You're the product.",
+                "The average person has 80 apps. Each one is a data collection tool. You carry a tracking device."
+            ],
+            "closer": "Check your phone settings tonight. Watch this again when you see what they collect.",
+            "title": "They Track Everything You Do Online",
         },
     ],
     "curiosity_gap": [
@@ -311,18 +434,38 @@ _VARIETY_SCRIPTS = {
             "closer": "Look at your room right now. What color is it? Watch again to see why you feel that way.",
             "title": "Your Room Color Is Controlling Your Mood",
         },
-    ],
-    "forbidden_insider": [
         {
-            "formula": "forbidden_insider",
-            "hook": "They don't teach you this in school on purpose. It's too powerful.",
+            "formula": "curiosity_gap",
+            "hook": "There's a muscle in your body that controls your confidence. Most people never use it.",
             "body": [
-                "The education system was designed to create workers, not thinkers.服从, not question. Follow, not lead.",
-                "Every test rewards memorization, not understanding. Every grade rewards obedience, not creativity.",
-                "The most important skills are never taught. Negotiation, emotional intelligence, self-awareness."
+                "Your posture directly affects your testosterone levels. Standing tall increases confidence by 20 percent.",
+                "Slouching decreases testosterone and increases cortisol. Your body language shapes your hormones.",
+                "Power posing for just 2 minutes before a stressful situation changes your brain chemistry."
             ],
-            "closer": "The real education starts after school. Watch again to remember what they missed.",
-            "title": "Why School Was Designed To Control You",
+            "closer": "Stand up straight right now. Watch this again before your next important meeting.",
+            "title": "The Confidence Muscle You Never Use",
+        },
+        {
+            "formula": "curiosity_gap",
+            "hook": "The way you hold your phone reveals your personality type. Every single time.",
+            "body": [
+                "Two hands means you're anxious and seeking control. One hand means you're confident and relaxed.",
+                "People who use their thumbs are more social. People who use index fingers are more analytical.",
+                "Your grip pressure reveals your stress level. Tight grip means your brain is in fight or flight."
+            ],
+            "closer": "Look at your phone right now. How are you holding it? Watch again to understand why.",
+            "title": "Your Phone Grip Reveals Your Personality",
+        },
+        {
+            "formula": "curiosity_gap",
+            "hook": "There's a time of day when your brain is 3x more creative. Most people waste it.",
+            "body": [
+                "Your brain is most creative in the first 2 hours after waking. This is when your prefrontal cortex is freshest.",
+                "Most people check email during this window. They waste their peak creativity on other people's priorities.",
+                "The best time for creative work is immediately after waking. Before your brain gets cluttered."
+            ],
+            "closer": "Tomorrow morning, create before you consume. Watch this again tonight to remember.",
+            "title": "Your Brain Is 3x More Creative At This Time",
         },
     ],
     "identity_bait": [
@@ -337,6 +480,50 @@ _VARIETY_SCRIPTS = {
             "closer": "You're not antisocial. You're selectively social. Watch again to own it.",
             "title": "If You Sit In The Corner You're This Type",
         },
+        {
+            "formula": "identity_bait",
+            "hook": "If you feel everything too deeply, you're not too sensitive. You're an empath.",
+            "body": [
+                "Empaths have a genetic variation that makes their mirror neurons hyperactive. They literally feel others' pain.",
+                "Your brain processes emotional and physical pain in the same region. Heartbreak is real. Not metaphorical.",
+                "This sensitivity is rare. Only 15 percent of people have it. It's a strength disguised as weakness."
+            ],
+            "closer": "You're not too much. You're exactly enough. Watch again when you forget.",
+            "title": "If You Feel Everything You're An Empath",
+        },
+        {
+            "formula": "identity_bait",
+            "hook": "If you always put others before yourself, you're not kind. You're codependent.",
+            "body": [
+                "Codependency isn't generosity. It's anxiety disguised as love. You help others to control their opinion of you.",
+                "Your brain releases oxytocin when you help someone. But codependents become addicted to that chemical.",
+                "Healthy boundaries aren't selfish. They're necessary. Without them, you disappear into other people."
+            ],
+            "closer": "Say no once today. Just once. Watch this again when it feels impossible.",
+            "title": "If You Always Put Others First Read This",
+        },
+        {
+            "formula": "identity_bait",
+            "hook": "If you're always tired but sleep 8 hours, you're not broken. You're emotionally exhausted.",
+            "body": [
+                "Emotional exhaustion depletes your energy faster than physical exercise. Your brain is running all day.",
+                "Your brain uses 20 percent of your energy. When it's processing emotions, it uses even more.",
+                "This is why therapy makes you tired. Your brain is doing heavy lifting. Rest isn't lazy. It's recovery."
+            ],
+            "closer": "Rest without guilt today. Watch this again when you feel lazy for resting.",
+            "title": "If You're Always Tired It's Emotional",
+        },
+        {
+            "formula": "identity_bait",
+            "hook": "If you can't stop overthinking, your brain is wired for genius. Not anxiety.",
+            "body": [
+                "Overthinkers have more active default mode networks. Their brains process information at deeper levels.",
+                "This is the same brain pattern found in creative geniuses and successful entrepreneurs.",
+                "The difference between overthinking and genius? Action. Channel the thinking into creating something."
+            ],
+            "closer": "Write down one thought right now. Just one. Watch this again when your brain won't stop.",
+            "title": "Overthinkers Have Geniuses In Their Brain",
+        },
     ],
     "reveal_teaser": [
         {
@@ -350,6 +537,50 @@ _VARIETY_SCRIPTS = {
             "closer": "Think about who's been acting different lately. Watch again to see the signs.",
             "title": "The #1 Sign Someone Will Betray You",
         },
+        {
+            "formula": "reveal_teaser",
+            "hook": "The 3 types of people who will destroy your life. The third one is the most dangerous.",
+            "body": [
+                "Number one, the narcissist. They drain your energy and make you question your reality.",
+                "Number two, the energy vampire. They only call when they need something. Never when you need them.",
+                "Number three, the covert manipulator. They pretend to be your friend while slowly destroying your confidence."
+            ],
+            "closer": "Look at your inner circle. Which one is there? Watch again to see clearly.",
+            "title": "3 Types Of People Who Will Destroy You",
+        },
+        {
+            "formula": "reveal_teaser",
+            "hook": "The last fact on this list will change how you see your parents forever.",
+            "body": [
+                "Number one, your attachment style was formed by age 2. Not by your parents. By their absence.",
+                "Number two, children who receive less physical affection develop different brain structures. Measurably.",
+                "Number three, the most damaging parenting style isn't abuse. It's inconsistency. Your brain craves predictability."
+            ],
+            "closer": "Think about your childhood. Watch this again with new eyes.",
+            "title": "The Parenting Truth That Changes Everything",
+        },
+        {
+            "formula": "reveal_teaser",
+            "hook": "The 3 signs you're about to have a breakthrough. The last one is terrifying.",
+            "body": [
+                "Number one, you feel like giving up. Your brain is testing your commitment before the next level.",
+                "Number two, everything feels harder. Your brain is rewiring. Resistance means growth is happening.",
+                "Number three, you feel completely alone. Every successful person felt this before their breakthrough."
+            ],
+            "closer": "If you're feeling these right now, don't quit. Watch this again tomorrow.",
+            "title": "3 Signs You're About To Break Through",
+        },
+        {
+            "formula": "reveal_teaser",
+            "hook": "The body language sign that means someone is secretly attracted to you.",
+            "body": [
+                "Number three, they mirror your movements unconsciously. Their body is trying to sync with yours.",
+                "Number two, they lean in when you talk. Even if they don't realize it. Proximity means comfort.",
+                "Number one, their pupils dilate when they look at you. Your brain does this when it sees something it wants."
+            ],
+            "closer": "Watch the next person who talks to you. Their body is telling you everything.",
+            "title": "Body Language That Means They Like You",
+        },
     ],
     "specific_transformation": [
         {
@@ -362,6 +593,50 @@ _VARIETY_SCRIPTS = {
             ],
             "closer": "Try one hour of silence. Just one. Then watch this again to compare your experience.",
             "title": "I Stopped Talking For 48 Hours",
+        },
+        {
+            "formula": "specific_transformation",
+            "hook": "I deleted all social media for 30 days. My brain changed completely.",
+            "body": [
+                "Day one, I felt phantom vibrations. My brain was literally hallucinating notifications.",
+                "Day fifteen, my attention span doubled. I could read for 2 hours without checking my phone.",
+                "Day thirty, I realized social media wasn't connecting me. It was replacing real connection."
+            ],
+            "closer": "Delete one app for 24 hours. Watch this again after. You'll understand everything.",
+            "title": "I Deleted Social Media For 30 Days",
+        },
+        {
+            "formula": "specific_transformation",
+            "hook": "I woke up at 5 AM for 60 days straight. The results were insane.",
+            "body": [
+                "Week one, I hated it. My body was exhausted. My brain was foggy. I wanted to quit.",
+                "Week three, something changed. My mornings became mine. No notifications. No demands. Just peace.",
+                "Week eight, I was more productive in 4 hours than I used to be in 12. My brain was reprogrammed."
+            ],
+            "closer": "Try 5 AM for just 3 days. Watch this again on day 4 to see what shifts.",
+            "title": "I Woke Up At 5 AM For 60 Days",
+        },
+        {
+            "formula": "specific_transformation",
+            "hook": "I tracked every emotion for 30 days. What I found was disturbing.",
+            "body": [
+                "Day one, I realized I felt 34 distinct emotions. Most people only notice 4 or 5.",
+                "Day fifteen, I discovered my anxiety peaked at 3 PM every day. Always. Without fail.",
+                "Day thirty, I understood. Emotions aren't random. They're patterns. And patterns can be changed."
+            ],
+            "closer": "Track your emotions for just 3 days. Watch this again to see the patterns.",
+            "title": "I Tracked My Emotions For 30 Days",
+        },
+        {
+            "formula": "specific_transformation",
+            "hook": "I cold showered every morning for 90 days. My brain will never be the same.",
+            "body": [
+                "Day one, my body screamed. Every cell wanted to quit. I lasted 30 seconds.",
+                "Day thirty, I lasted 3 minutes. My brain stopped panicking. It started adapting.",
+                "Day ninety, I understood. Cold exposure rewires your stress response. You become anti-fragile."
+            ],
+            "closer": "Try 10 seconds of cold water tomorrow morning. Watch this again after.",
+            "title": "I Cold Showered For 90 Days Straight",
         },
     ],
 }
@@ -403,6 +678,30 @@ def _pick_best_script(topic: str) -> dict:
         "behavior": "curiosity_gap",
         "control": "forbidden_insider",
         "time": "specific_transformation",
+        "overthink": "contradiction",
+        "happiness": "pattern_interrupt",
+        "comfort": "pattern_interrupt",
+        "school": "forbidden_insider",
+        "social": "forbidden_insider",
+        "sleep": "forbidden_insider",
+        "food": "forbidden_insider",
+        "introvert": "contradiction",
+        "room": "curiosity_gap",
+        "color": "curiosity_gap",
+        "posture": "curiosity_gap",
+        "phone": "curiosity_gap",
+        "betray": "reveal_teaser",
+        "destroy": "reveal_teaser",
+        "parent": "reveal_teaser",
+        "breakthrough": "reveal_teaser",
+        "attracted": "reveal_teaser",
+        "cold": "specific_transformation",
+        "morning": "specific_transformation",
+        "track": "specific_transformation",
+        "sensitiv": "identity_bait",
+        "codependent": "identity_bait",
+        "exhaust": "identity_bait",
+        "think": "identity_bait",
     }
 
     # Find best matching formula for this topic
