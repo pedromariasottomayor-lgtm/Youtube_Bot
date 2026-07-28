@@ -573,37 +573,108 @@ def _generate_character_bg(script: str, audio_duration: float, output_path: str)
 
 
 # ══════════════════════════════════════════════════════════════════
-#  REAL STOCK FOOTAGE (pre-downloaded clips in assets/gameplay/)
+#  REAL STOCK FOOTAGE — multi-clip, validated, no credits
 # ══════════════════════════════════════════════════════════════════
 
-def _pick_real_footage_clip(output_path: str, duration: float) -> str:
-    """Pick a random pre-downloaded stock clip and loop it to match duration."""
+def _validate_clip(path: str) -> bool:
+    """Check if a clip is usable (minimum size, reasonable duration)."""
+    if not os.path.exists(path):
+        return False
+    size_mb = os.path.getsize(path) / (1024 * 1024)
+    if size_mb < 0.5:
+        log.warning(f"Clip too small ({size_mb:.1f} MB): {os.path.basename(path)}")
+        return False
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", path],
+            capture_output=True, text=True, timeout=10
+        )
+        dur = float(r.stdout.strip())
+        if dur < 3:
+            log.warning(f"Clip too short ({dur:.0f}s): {os.path.basename(path)}")
+            return False
+    except:
+        pass
+    return True
+
+
+def _get_good_clips() -> list:
+    """Return validated clips from assets/gameplay/."""
     assets_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "gameplay")
     if not os.path.exists(assets_dir):
+        return []
+    all_clips = [os.path.join(assets_dir, f) for f in os.listdir(assets_dir) if f.endswith(".mp4")]
+    return [c for c in all_clips if _validate_clip(c)]
+
+
+def _multiclip_background(output_path: str, duration: float):
+    """Create background from multiple clips. Avoids last 40% of each clip."""
+    clips = _get_good_clips()
+    if len(clips) < 2:
+        log.warning("Need at least 2 valid clips for multi-clip")
         return ""
 
-    clips = [os.path.join(assets_dir, f) for f in os.listdir(assets_dir) if f.endswith(".mp4")]
-    if not clips:
+    random.shuffle(clips)
+    seg_dur = 3.5
+    seg_count = max(3, int(duration / seg_dur) + 2)
+    import tempfile, shutil
+    seg_dir = tempfile.mkdtemp(prefix="multiclip_")
+    seg_files = []
+
+    for i in range(seg_count):
+        clip = clips[i % len(clips)]
+        try:
+            r = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                 "-of", "default=noprint_wrappers=1:nokey=1", clip],
+                capture_output=True, text=True, timeout=10
+            )
+            clip_dur = float(r.stdout.strip())
+        except:
+            continue
+
+        safe_end = clip_dur * 0.6  # Skip last 40%
+        if safe_end < seg_dur:
+            continue
+        max_start = max(0, safe_end - seg_dur - 0.5)
+        start = random.uniform(0.5, max_start) if max_start > 1 else 0.5
+
+        seg_path = os.path.join(seg_dir, f"seg_{i:03d}.mp4")
+        cmd = [
+            "ffmpeg", "-y",
+            "-ss", f"{start:.1f}", "-i", clip,
+            "-t", f"{seg_dur:.1f}",
+            "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black",
+            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+            "-an", "-pix_fmt", "yuv420p", "-r", "30",
+            seg_path
+        ]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if r.returncode == 0 and os.path.exists(seg_path) and os.path.getsize(seg_path) > 1000:
+            seg_files.append(seg_path)
+
+    if len(seg_files) < 2:
+        shutil.rmtree(seg_dir, ignore_errors=True)
         return ""
 
-    chosen = random.choice(clips)
-    log.info(f"Using real footage: {os.path.basename(chosen)}")
+    concat_file = os.path.join(seg_dir, "concat.txt")
+    with open(concat_file, "w") as f:
+        for sf in seg_files:
+            f.write(f"file '{sf}'\n")
 
     cmd = [
-        "ffmpeg", "-y", "-stream_loop", "-1", "-i", chosen,
-        "-t", str(duration),
+        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_file,
         "-c:v", "libx264", "-preset", "fast", "-crf", "23",
-        "-an", "-pix_fmt", "yuv420p",
+        "-pix_fmt", "yuv420p", "-t", str(duration),
         output_path
     ]
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-        if result.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 5000:
-            size_kb = os.path.getsize(output_path) / 1024
-            log.info(f"Real footage ready: {output_path} ({size_kb:.0f} KB)")
-            return output_path
-    except Exception as e:
-        log.warning(f"Real footage failed: {e}")
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    shutil.rmtree(seg_dir, ignore_errors=True)
+
+    if r.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 5000:
+        log.info(f"Multi-clip: {len(seg_files)} segments from {len(clips)} clips")
+        return output_path
     return ""
 
 
@@ -663,7 +734,7 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
 
     # Step 1: Create background — ALWAYS guarantee visible video
     if mode == "real_footage":
-        bg_path = _pick_real_footage_clip(bg_path, audio_duration + 1)
+        bg_path = _multiclip_background(bg_path, audio_duration + 1)
         if not bg_path or not os.path.exists(bg_path):
             bg_path = os.path.join(work_dir, f"{base}_bg.mp4")
             mode = "stock"
