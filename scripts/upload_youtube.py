@@ -19,8 +19,8 @@ TOKEN_PICKLE_FILE   = "youtube_token.pickle"
 # ─── TARGET CHANNEL (CRITICAL) ──────────────────────────────────
 # Videos MUST go to MindRank, NEVER the personal channel.
 # The bot aborts if the authenticated channel is not MindRank.
-TARGET_CHANNEL_ID = "UC7oa8U1arCm0uc1LBg0X25A"
-TARGET_CHANNEL_NAME = "MindRank Shorts"
+TARGET_CHANNEL_ID = "UCcZCYS2az_YcFQrymgOs3pQ"
+TARGET_CHANNEL_NAME = "MindRank"
 
 # YouTube category IDs (pick one for your content)
 CATEGORIES = {
