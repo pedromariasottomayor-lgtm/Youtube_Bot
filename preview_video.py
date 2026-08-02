@@ -448,17 +448,22 @@ def main():
     dur = get_duration(voice_raw)
     print(f"  Duration: {dur:.1f}s")
 
-    # 3. Background — multi-clip, no garbage
-    print("\n[3/6] Background (multi-clip)...")
+    # 3. Background — animated, NO watermarks
+    print("\n[3/6] Background (animated)...")
     bg_raw = os.path.join(out, f"{base}_bg_raw.mp4")
-    ok = build_multiclip_bg(dur + 1, bg_raw)
-    if not ok:
-        print("  Multi-clip failed. Generating animated fallback...")
-        cmd = [FFMPEG, "-y", "-f", "lavfi", "-i",
-               f"color=c=0x0A0A15:s=1080x1920:d={dur+1}:r=30",
-               "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-               "-pix_fmt", "yuv420p", bg_raw]
-        subprocess.run(cmd, capture_output=True, timeout=60)
+    cmd = [FFMPEG, "-y",
+           "-f", "lavfi", "-i",
+           f"color=c=0x0A0A15:s=1080x1920:d={dur+1}:r=30",
+           "-vf", ",".join([
+               "drawtext=text='●':fontsize=200:fontcolor=0x00D4FF@0.06:x='mod(t*30,1080)':y='h/3+100*sin(t*0.5)'",
+               "drawtext=text='●':fontsize=160:fontcolor=0x7B2FBE@0.06:x='mod(t*22+400,1080)':y='2*h/3+80*cos(t*0.7)'",
+               "drawtext=text='●':fontsize=120:fontcolor=0x00D4FF@0.04:x='mod(t*15+200,1080)':y='h/2+60*sin(t*1.2)'",
+               "drawtext=text='—':fontsize=80:fontcolor=0x00D4FF@0.03:x='mod(t*40+100,1080)':y='h*0.7+40*sin(t*0.8)'",
+               "vignette=PI/4",
+           ]),
+           "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+           "-pix_fmt", "yuv420p", bg_raw]
+    subprocess.run(cmd, capture_output=True, timeout=120)
 
     # 4. Text overlays
     print("\n[4/6] Text overlays...")

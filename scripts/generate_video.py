@@ -15,6 +15,18 @@ from typing import List, Tuple, Optional
 
 log = logging.getLogger(__name__)
 
+FFMPEG = "/Users/pedrosottomayor/Library/Python/3.9/lib/python/site-packages/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1"
+
+def _get_duration(path):
+    try:
+        r = subprocess.run([FFMPEG, "-i", path, "-f", "null", "-"], capture_output=True, text=True, timeout=10)
+        m = re.search(r"Duration: (\d+):(\d+):(\d+\.\d+)", r.stderr)
+        if m:
+            return float(m.group(1))*3600 + float(m.group(2))*60 + float(m.group(3))
+    except:
+        pass
+    return 0
+
 WIDTH  = 1080
 HEIGHT = 1920
 FPS    = 30
@@ -311,7 +323,7 @@ def generate_thumbnail(script_data: dict, output_path: str) -> str:
 def _generate_animated_bg(output_path: str, duration: float):
     """Professional animated dark background with moving particles and glow."""
     cmd = [
-        "ffmpeg", "-y",
+        FFMPEG, "-y",
         "-f", "lavfi", "-i",
         f"color=c=0x0A0A15:s={WIDTH}x{HEIGHT}:d={duration}:r={FPS}",
         "-vf", ",".join([
@@ -340,7 +352,7 @@ def _generate_animated_bg(output_path: str, duration: float):
     except Exception as e:
         log.warning(f"Animated bg failed: {e}")
         subprocess.run([
-            "ffmpeg", "-y", "-f", "lavfi", "-i",
+            FFMPEG, "-y", "-f", "lavfi", "-i",
             f"color=c=0x0A0A15:s={WIDTH}x{HEIGHT}:d={duration}:r={FPS}",
             "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
             output_path
@@ -489,7 +501,7 @@ def _generate_gameplay_bg(output_path: str, duration: float):
 
     log.info("All gameplay frames saved. Encoding with FFmpeg...")
     cmd = [
-        "ffmpeg", "-y",
+        FFMPEG, "-y",
         "-framerate", str(fps),
         "-i", os.path.join(tmp_dir, "frame_%05d.jpg"),
         "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
@@ -548,7 +560,7 @@ def _generate_character_bg(script: str, audio_duration: float, output_path: str)
         log.info(f"All {total_frames} frames saved. Encoding with FFmpeg...")
 
         cmd = [
-            "ffmpeg", "-y",
+            FFMPEG, "-y",
             "-framerate", str(fps),
             "-i", os.path.join(tmp_dir, "frame_%05d.jpg"),
             "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
@@ -572,110 +584,7 @@ def _generate_character_bg(script: str, audio_duration: float, output_path: str)
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
-# ══════════════════════════════════════════════════════════════════
-#  REAL STOCK FOOTAGE — multi-clip, validated, no credits
-# ══════════════════════════════════════════════════════════════════
 
-def _validate_clip(path: str) -> bool:
-    """Check if a clip is usable (minimum size, reasonable duration)."""
-    if not os.path.exists(path):
-        return False
-    size_mb = os.path.getsize(path) / (1024 * 1024)
-    if size_mb < 0.5:
-        log.warning(f"Clip too small ({size_mb:.1f} MB): {os.path.basename(path)}")
-        return False
-    try:
-        r = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "default=noprint_wrappers=1:nokey=1", path],
-            capture_output=True, text=True, timeout=10
-        )
-        dur = float(r.stdout.strip())
-        if dur < 3:
-            log.warning(f"Clip too short ({dur:.0f}s): {os.path.basename(path)}")
-            return False
-    except:
-        pass
-    return True
-
-
-def _get_good_clips() -> list:
-    """Return validated clips from assets/gameplay/."""
-    assets_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "gameplay")
-    if not os.path.exists(assets_dir):
-        return []
-    all_clips = [os.path.join(assets_dir, f) for f in os.listdir(assets_dir) if f.endswith(".mp4")]
-    return [c for c in all_clips if _validate_clip(c)]
-
-
-def _multiclip_background(output_path: str, duration: float):
-    """Create background from multiple clips. Avoids last 40% of each clip."""
-    clips = _get_good_clips()
-    if len(clips) < 2:
-        log.warning("Need at least 2 valid clips for multi-clip")
-        return ""
-
-    random.shuffle(clips)
-    seg_dur = 3.5
-    seg_count = max(3, int(duration / seg_dur) + 2)
-    import tempfile, shutil
-    seg_dir = tempfile.mkdtemp(prefix="multiclip_")
-    seg_files = []
-
-    for i in range(seg_count):
-        clip = clips[i % len(clips)]
-        try:
-            r = subprocess.run(
-                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                 "-of", "default=noprint_wrappers=1:nokey=1", clip],
-                capture_output=True, text=True, timeout=10
-            )
-            clip_dur = float(r.stdout.strip())
-        except:
-            continue
-
-        safe_end = clip_dur * 0.6  # Skip last 40%
-        if safe_end < seg_dur:
-            continue
-        max_start = max(0, safe_end - seg_dur - 0.5)
-        start = random.uniform(0.5, max_start) if max_start > 1 else 0.5
-
-        seg_path = os.path.join(seg_dir, f"seg_{i:03d}.mp4")
-        cmd = [
-            "ffmpeg", "-y",
-            "-ss", f"{start:.1f}", "-i", clip,
-            "-t", f"{seg_dur:.1f}",
-            "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black",
-            "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-            "-an", "-pix_fmt", "yuv420p", "-r", "30",
-            seg_path
-        ]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        if r.returncode == 0 and os.path.exists(seg_path) and os.path.getsize(seg_path) > 1000:
-            seg_files.append(seg_path)
-
-    if len(seg_files) < 2:
-        shutil.rmtree(seg_dir, ignore_errors=True)
-        return ""
-
-    concat_file = os.path.join(seg_dir, "concat.txt")
-    with open(concat_file, "w") as f:
-        for sf in seg_files:
-            f.write(f"file '{sf}'\n")
-
-    cmd = [
-        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", concat_file,
-        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
-        "-pix_fmt", "yuv420p", "-t", str(duration),
-        output_path
-    ]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-    shutil.rmtree(seg_dir, ignore_errors=True)
-
-    if r.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 5000:
-        log.info(f"Multi-clip: {len(seg_files)} segments from {len(clips)} clips")
-        return output_path
-    return ""
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -690,8 +599,6 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
     3. Add audio
     NO intro clip — the thumbnail image is the YouTube cover only.
     """
-    from scripts.stock_footage import get_stock_for_script, concatenate_clips
-
     if output_dir.endswith(".mp4"):
         video_path = output_dir
         work_dir = os.path.dirname(video_path) or "."
@@ -709,63 +616,21 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
     thumb_path = os.path.join(thumb_dir, f"{base}_thumb.jpg")
 
     # Get audio duration
-    try:
-        probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "default=noprint_wrappers=1:nokey=1", audio_path],
-            capture_output=True, text=True, timeout=10
-        )
-        audio_duration = float(probe.stdout.strip())
-    except Exception:
+    audio_duration = _get_duration(audio_path)
+    if audio_duration == 0:
         audio_duration = 25.0
     log.info(f"Audio duration: {audio_duration:.1f}s")
 
-    # Choose mode: real footage (40%), stock (25%), characters (20%), gameplay (15%)
-    mode = random.choices(
-        ["real_footage", "stock", "characters", "gameplay"],
-        weights=[40, 25, 20, 15],
-        k=1
-    )[0]
-    log.info(f"Video mode: {mode}")
-
     script_text = script_data.get("script", "")
     bg_path = os.path.join(work_dir, f"{base}_bg.mp4")
-    stock_clips = []
 
-    # Step 1: Create background — ALWAYS guarantee visible video
-    if mode == "real_footage":
-        bg_path = _multiclip_background(bg_path, audio_duration + 1)
-        if not bg_path or not os.path.exists(bg_path):
-            bg_path = os.path.join(work_dir, f"{base}_bg.mp4")
-            mode = "stock"
+    # Step 1: Create background — ONLY generated content, NO watermarked clips
+    mode = "gameplay"
+    log.info(f"Video mode: {mode}")
 
-    if mode == "stock":
-        stock_clips = get_stock_for_script(script_text, work_dir, audio_duration)
-        if stock_clips and len(stock_clips) >= 2:
-            log.info(f"Compositing {len(stock_clips)} stock clips...")
-            success = concatenate_clips(stock_clips, bg_path, audio_duration + 1)
-            if not success:
-                stock_clips = []
-        else:
-            stock_clips = []
-
-        if not stock_clips:
-            log.info("Stock footage unavailable, trying gameplay")
-            mode = "gameplay"
-
-    if mode == "gameplay":
-        _generate_gameplay_bg(bg_path, audio_duration + 1)
-        if not os.path.exists(bg_path) or os.path.getsize(bg_path) < 1000:
-            log.warning("Gameplay bg invalid, using animated fallback")
-            mode = "fallback"
-
-    if mode == "characters":
-        _generate_character_bg(script_text, audio_duration, bg_path)
-        if not os.path.exists(bg_path) or os.path.getsize(bg_path) < 1000:
-            log.warning("Character bg invalid, using animated fallback")
-            mode = "fallback"
-
-    if mode == "fallback":
+    _generate_gameplay_bg(bg_path, audio_duration + 1)
+    if not os.path.exists(bg_path) or os.path.getsize(bg_path) < 1000:
+        log.warning("Gameplay bg invalid, using animated fallback")
         _generate_animated_bg(bg_path, audio_duration + 1)
 
     # Verify background video exists and is valid
@@ -786,7 +651,7 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
     log.info("Compositing final video...")
 
     cmd = [
-        "ffmpeg", "-y",
+        FFMPEG, "-y",
         "-i", bg_path,
         "-i", audio_path,
         "-filter_complex",
@@ -806,7 +671,7 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
     if result.returncode != 0:
         log.error(f"FFmpeg failed: {result.stderr[:500]}")
         cmd_simple = [
-            "ffmpeg", "-y",
+            FFMPEG, "-y",
             "-i", bg_path,
             "-i", audio_path,
             "-c:v", "copy", "-c:a", "aac", "-b:a", "128k",
@@ -822,11 +687,10 @@ def generate_video(script_data: dict, audio_path: str, output_dir: str) -> str:
     log.info(f"Video done: {video_path} ({size_mb:.1f} MB)")
 
     # Cleanup intermediate files
-    for f in stock_clips + [bg_path]:
-        try:
-            if f and os.path.exists(f) and f != video_path:
-                os.remove(f)
-        except OSError:
-            pass
+    try:
+        if bg_path and os.path.exists(bg_path) and bg_path != video_path:
+            os.remove(bg_path)
+    except OSError:
+        pass
 
     return video_path
