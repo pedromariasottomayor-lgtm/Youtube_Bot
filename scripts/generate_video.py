@@ -10,12 +10,14 @@ import time
 import textwrap
 import random
 import logging
+import shutil
 import subprocess
 from typing import List, Tuple, Optional
 
 log = logging.getLogger(__name__)
 
-FFMPEG = "/Users/pedrosottomayor/Library/Python/3.9/lib/python/site-packages/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1"
+_LOCAL_FFMPEG = "/Users/pedrosottomayor/Library/Python/3.9/lib/python/site-packages/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1"
+FFMPEG = shutil.which("ffmpeg") or _LOCAL_FFMPEG
 
 def _get_duration(path):
     try:
