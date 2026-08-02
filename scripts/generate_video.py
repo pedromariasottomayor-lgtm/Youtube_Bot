@@ -362,164 +362,93 @@ def _generate_animated_bg(output_path: str, duration: float):
 
 
 # ══════════════════════════════════════════════════════════════════
-#  GAMEPLAY BACKGROUND — Endless Runner (Subway Surfers style)
+#  GAMEPLAY BACKGROUND — Real gameplay clips (Subway Surfers, Minecraft,
+#  satisfying ASMR) with Ken Burns pan/zoom. Loops to fill the duration.
 # ══════════════════════════════════════════════════════════════════
 
+_GAMEPLAY_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "gameplay")
+
+def _find_gameplay_clips():
+    """Return list of real gameplay clip paths committed to the repo."""
+    clips = []
+    if os.path.isdir(_GAMEPLAY_DIR):
+        for f in sorted(os.listdir(_GAMEPLAY_DIR)):
+            if f.startswith("gameplay_") and f.endswith((".mp4", ".webm", ".mov")):
+                clips.append(os.path.join(_GAMEPLAY_DIR, f))
+    return clips
+
+
 def _generate_gameplay_bg(output_path: str, duration: float):
-    """Generate a simple endless-runner style animation loop using Pillow.
+    """Create background from a real gameplay clip (loop + pan/zoom).
 
-    Creates a side-scrolling character dodging obstacles on colorful tracks —
-    the visual stimulation that keeps viewers watching (Subway Surfers style).
+    Falls back to the animated background if no clips are available.
     """
-    import tempfile
-    import shutil
-    from PIL import Image as PILImage, ImageDraw
+    clips = _find_gameplay_clips()
+    if not clips:
+        log.warning("No real gameplay clips found, using animated background")
+        _generate_animated_bg(output_path, duration + 1)
+        return
 
-    fps = 30
-    total_frames = int(duration * fps)
-    tmp_dir = tempfile.mkdtemp(prefix="gameplay_")
+    clip_path = random.choice(clips)
+    log.info(f"Using real gameplay clip: {os.path.basename(clip_path)} ({duration:.0f}s bg)")
 
-    log.info(f"Generating {total_frames} gameplay frames ({duration:.0f}s)...")
+    # Subtle Ken Burns: slow zoom in/out + gentle pan, then crop to 9:16
+    filter_chain = (
+        "scale=1080:1920:force_original_aspect_ratio=increase,"
+        "crop=1080:1920,"
+        "zoompan=z='1.05+0.04*sin(on/60)':"
+        "x='iw/2-(iw/zoom/2)+20*sin(on/45)':"
+        "y='ih/2-(ih/zoom/2)+10*cos(on/35)':"
+        "d=1:s=1080x1920:fps=30,"
+        "format=yuv420p"
+    )
 
-    track_colors = [(0, 150, 255), (255, 80, 80), (80, 220, 120)]
-    runner_color = (255, 220, 0)
-
-    lane_y_positions = [HEIGHT * 0.62, HEIGHT * 0.72, HEIGHT * 0.82]
-
-    random.seed(42)
-    obstacles = []
-    for i in range(int(duration * 3)):
-        t_start = random.uniform(0, duration)
-        lane = random.randint(0, 2)
-        obs_type = random.choice(["box", "barrier", "gap"])
-        obs_color = random.choice(track_colors)
-        obstacles.append((t_start, lane, obs_type, obs_color))
-    obstacles.sort(key=lambda x: x[0])
-
-    coin_positions = []
-    for i in range(int(duration * 5)):
-        t = random.uniform(0, duration)
-        lane = random.randint(0, 2)
-        y_offset = random.uniform(-80, 80)
-        coin_positions.append((t, lane, y_offset))
-
-    runner_lane = 1
-    runner_bob = 0
-
-    for frame_idx in range(total_frames):
-        t = frame_idx / fps
-
-        img = PILImage.new("RGB", (WIDTH, HEIGHT), (15, 12, 30))
-        draw = ImageDraw.Draw(img)
-
-        # Moving track lines (parallax effect)
-        speed = 400
-        for lane_i in range(3):
-            ly = int(lane_y_positions[lane_i])
-            track_color = track_colors[lane_i]
-            tr, tg, tb = track_color
-
-            draw.rectangle([0, ly - 3, WIDTH, ly + 3], fill=(tr // 3, tg // 3, tb // 3))
-
-            for stripe_i in range(20):
-                stripe_x = int((stripe_i * 120 - (t * speed * (1 + lane_i * 0.3)) % (20 * 120)) % (WIDTH + 120) - 60)
-                stripe_w = 60
-                alpha = 0.3
-                draw.rectangle([stripe_x, ly - 1, stripe_x + stripe_w, ly + 1],
-                             fill=(int(tr * alpha), int(tg * alpha), int(tb * alpha)))
-
-        # Coins (spinning effect)
-        for ct, clane, cy_off in coin_positions:
-            ct_norm = ct % duration
-            if abs(t - ct_norm) < 0.15:
-                coin_x = int(WIDTH * 0.7 + 40 * math.sin(t * 8))
-                coin_y = int(lane_y_positions[clane] - 40 + cy_off)
-                coin_r = int(12 + 4 * math.sin(t * 12))
-                draw.ellipse([coin_x - coin_r, coin_y - coin_r, coin_x + coin_r, coin_y + coin_r],
-                           fill=ACCENT_YELLOW, outline=(200, 180, 0))
-
-        # Obstacles
-        for ot, olane, otype, ocolor in obstacles:
-            if abs(t - ot) < 0.8:
-                ox = int(WIDTH * 0.65 + (t - ot) * 200)
-                oy = int(lane_y_positions[olane])
-                ocr, ocg, ocb = ocolor
-
-                if otype == "box":
-                    draw.rectangle([ox - 25, oy - 45, ox + 25, oy + 5],
-                                 fill=ocolor, outline=(255, 255, 255))
-                elif otype == "barrier":
-                    draw.rectangle([ox - 35, oy - 55, ox + 35, oy + 5],
-                                 fill=ocolor, outline=(255, 255, 255))
-                    draw.rectangle([ox - 5, oy - 75, ox + 5, oy - 55],
-                                 fill=(200, 200, 200))
-                else:
-                    draw.rectangle([ox - 40, oy + 5, ox + 40, oy + 15],
-                                 fill=(200, 50, 50))
-
-        # Runner character (simple stick figure with glow)
-        runner_x = int(WIDTH * 0.3)
-        runner_y = int(lane_y_positions[runner_lane])
-        runner_bob = int(8 * math.sin(t * 10))
-
-        glow_r = 45
-        for i in range(glow_r, 0, -3):
-            alpha = int(15 * (1 - i / glow_r))
-            draw.ellipse([runner_x - i, runner_y - 50 + runner_bob - i,
-                        runner_x + i, runner_y - 50 + runner_bob + i],
-                       fill=(255, 220, 0, alpha))
-
-        draw.ellipse([runner_x - 14, runner_y - 62 + runner_bob,
-                     runner_x + 14, runner_y - 34 + runner_bob], fill=(220, 180, 150))
-        draw.rectangle([runner_x - 10, runner_y - 35 + runner_bob,
-                       runner_x + 10, runner_y + 5 + runner_bob], fill=runner_color)
-        leg_offset = int(12 * math.sin(t * 14))
-        draw.line([runner_x - 5, runner_y + 5 + runner_bob,
-                  runner_x - 8 + leg_offset, runner_y + 40 + runner_bob], fill=(60, 50, 80), width=5)
-        draw.line([runner_x + 5, runner_y + 5 + runner_bob,
-                  runner_x + 8 - leg_offset, runner_y + 40 + runner_bob], fill=(60, 50, 80), width=5)
-        arm_offset = int(10 * math.sin(t * 14 + 1.5))
-        draw.line([runner_x - 8, runner_y - 25 + runner_bob,
-                  runner_x - 22 + arm_offset, runner_y - 8 + runner_bob], fill=(60, 50, 80), width=4)
-        draw.line([runner_x + 8, runner_y - 25 + runner_bob,
-                  runner_x + 22 - arm_offset, runner_y - 8 + runner_bob], fill=(60, 50, 80), width=4)
-
-        # Score display (top right)
-        score = int(t * 100)
-        score_font = get_font(48, bold=True)
-        draw.text((WIDTH - 280, 40), f"SCORE: {score}", font=score_font, fill=ACCENT_YELLOW)
-
-        # Speed lines (motion blur effect)
-        for _ in range(8):
-            sy = random.randint(100, HEIGHT - 100)
-            sx = random.randint(0, WIDTH)
-            sl = random.randint(30, 100)
-            draw.line([sx, sy, sx - sl, sy], fill=(255, 255, 255), width=1)
-
-        img.save(os.path.join(tmp_dir, f"frame_{frame_idx:05d}.jpg"), "JPEG", quality=85)
-
-        if frame_idx % (fps * 10) == 0 and frame_idx > 0:
-            log.info(f"  Gameplay: frame {frame_idx}/{total_frames}")
-
-    log.info("All gameplay frames saved. Encoding with FFmpeg...")
     cmd = [
         FFMPEG, "-y",
-        "-framerate", str(fps),
-        "-i", os.path.join(tmp_dir, "frame_%05d.jpg"),
-        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "26",
+        "-stream_loop", "-1",
+        "-i", clip_path,
+        "-t", str(duration),
+        "-vf", filter_chain,
+        "-c:v", "libx264", "-preset", "fast", "-crf", "24",
         "-pix_fmt", "yuv420p",
-        "-t", str(duration + 0.5),
+        "-an",
         output_path
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-    shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    if result.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 1000:
-        size_kb = os.path.getsize(output_path) / 1024
-        log.info(f"Gameplay background saved: {output_path} ({size_kb:.0f} KB)")
-    else:
-        log.warning(f"Gameplay FFmpeg failed: {result.stderr[:200]}")
-        _generate_animated_bg(output_path, duration + 1)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        if result.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 1000:
+            size_kb = os.path.getsize(output_path) / 1024
+            log.info(f"Gameplay background saved: {output_path} ({size_kb:.0f} KB)")
+            return
+        else:
+            log.warning(f"Gameplay clip ffmpeg failed: {result.stderr[:300]}")
+    except Exception as e:
+        log.warning(f"Gameplay clip error: {e}")
+
+    # Retry with a different clip, then fall back to animated
+    for alt in [c for c in clips if c != clip_path]:
+        retry_cmd = [
+            FFMPEG, "-y",
+            "-stream_loop", "-1",
+            "-i", alt,
+            "-t", str(duration),
+            "-vf", filter_chain,
+            "-c:v", "libx264", "-preset", "fast", "-crf", "24",
+            "-pix_fmt", "yuv420p",
+            "-an",
+            output_path
+        ]
+        try:
+            result = subprocess.run(retry_cmd, capture_output=True, text=True, timeout=180)
+            if result.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 1000:
+                log.info(f"Gameplay background saved (retry): {output_path}")
+                return
+        except Exception:
+            continue
+
+    log.warning("All gameplay clips failed, using animated background")
+    _generate_animated_bg(output_path, duration + 1)
 
 
 # ══════════════════════════════════════════════════════════════════

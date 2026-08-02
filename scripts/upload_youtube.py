@@ -16,6 +16,12 @@ log = logging.getLogger(__name__)
 CLIENT_SECRETS_FILE = "client_secrets.json"
 TOKEN_PICKLE_FILE   = "youtube_token.pickle"
 
+# ─── TARGET CHANNEL (CRITICAL) ──────────────────────────────────
+# Videos MUST go to MindRank, NEVER the personal channel.
+# The bot aborts if the authenticated channel is not MindRank.
+TARGET_CHANNEL_ID = "UC7oa8U1arCm0uc1LBg0X25A"
+TARGET_CHANNEL_NAME = "MindRank Shorts"
+
 # YouTube category IDs (pick one for your content)
 CATEGORIES = {
     "film":          1,
@@ -104,6 +110,30 @@ def get_authenticated_service():
 
     service = build("youtube", "v3", credentials=credentials)
     log.info("YouTube API authenticated successfully")
+
+    # ── CHANNEL SAFETY GUARD ─────────────────────────────────────
+    # Verify the authenticated channel is MindRank before uploading.
+    try:
+        channels = service.channels().list(part="id,snippet", mine=True).execute()
+        items = channels.get("items", [])
+        if not items:
+            log.error("No channel found for this token — cannot upload.")
+            return None
+        ch = items[0]
+        ch_id = ch["id"]
+        ch_name = ch["snippet"]["title"]
+        if ch_id != TARGET_CHANNEL_ID:
+            log.error(
+                f"WRONG CHANNEL! Token belongs to '{ch_name}' ({ch_id}), "
+                f"not '{TARGET_CHANNEL_NAME}' ({TARGET_CHANNEL_ID}). "
+                "Refusing to upload."
+            )
+            return None
+        log.info(f"Channel verified: {ch_name} ({ch_id}) — correct target")
+    except Exception as e:
+        log.error(f"Channel check failed ({e}) — aborting upload for safety")
+        return None
+
     return service
 
 
