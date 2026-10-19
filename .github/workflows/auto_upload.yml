@@ -2,6 +2,17 @@
 # GitHub Actions Workflow — Auto YouTube Upload
 # Posts 3x/day: 8AM, 2PM, 8PM UTC (optimal for English audience)
 # YouTube API limit: 6 videos/day — we use 3 for safety
+#
+# Robustness features:
+#   - Retry: bot runs up to 3 attempts per schedule (transient
+#     failures like Gemini/API hiccups no longer kill the run)
+#   - Heartbeat: every run commits a timestamp file so the repo is
+#     never "inactive" for 60 days (GitHub auto-disables scheduled
+#     workflows on inactive repos)
+#   - Token self-heal: refreshed OAuth token is written back to the
+#     YOUTUBE_TOKEN_B64 secret automatically (needs GITHUB_PAT)
+#   - Failure alert: a GitHub issue is opened/updated on failure so
+#     you get an email notification — never fail silently
 # ─────────────────────────────────────────────────────────────────
 
 name: Auto YouTube Upload
@@ -15,10 +26,18 @@ on:
 
   workflow_dispatch:         # Manual trigger from GitHub UI
 
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: upload-video
+  cancel-in-progress: false
+
 jobs:
   upload-video:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
@@ -30,7 +49,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install FFmpeg
-        run: sudo apt-get install -y ffmpeg fonts-dejavu fonts-liberation
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu fonts-liberation
 
       - name: Install Python packages
         run: pip install -r requirements.txt
@@ -48,22 +67,81 @@ jobs:
             echo "${{ secrets.YOUTUBE_TOKEN_B64 }}" | base64 -d > youtube_token.pickle
           fi
 
-      - name: Run YouTube bot
+      - name: Run YouTube bot (with retries)
+        id: bot
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-        run: python main.py
+        run: |
+          for attempt in 1 2 3; do
+            echo "━━━ Attempt $attempt/3 ━━━"
+            if python main.py; then
+              echo "bot_ok=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Attempt $attempt failed; waiting $((attempt * 60))s before retry..."
+            sleep $((attempt * 60))
+          done
+          echo "bot_ok=false" >> "$GITHUB_OUTPUT"
+          exit 1
 
       - name: Save state
+        if: always() && steps.bot.outputs.bot_ok == 'true'
         uses: actions/cache@v4
         with:
           path: state.json
           key: bot-state-${{ github.run_number }}
 
       - name: Save updated YouTube token
+        if: always() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_PAT }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "GITHUB_PAT secret not set — skipping token refresh."; exit 0
+          fi
+          if [ ! -f youtube_token.pickle ]; then
+            echo "No token file to save."; exit 0
+          fi
+          TOKEN_B64=$(base64 -w 0 youtube_token.pickle)
+          # gh handles NaCl encryption of the secret for us
+          echo "$TOKEN_B64" | gh secret set YOUTUBE_TOKEN_B64 \
+            --repo "${{ github.repository }}" && echo "Secret updated."
+
+      - name: Heartbeat — keep repo active (never get auto-disabled)
         if: always()
         run: |
-          if [ -f youtube_token.pickle ]; then
-            TOKEN_B64=$(base64 -w 0 youtube_token.pickle)
-            echo "TOKEN_B64=$TOKEN_B64" >> $GITHUB_ENV
+          # GitHub disables scheduled workflows after 60 days without
+          # repo activity. This commit guarantees activity every run.
+          git config user.name "mindrank-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p .heartbeat
+          date -u +"%Y-%m-%dT%H:%M:%SZ run=${{ github.run_number }} status=${{ job.status }}" > .heartbeat/last_run.txt
+          git add .heartbeat/last_run.txt
+          git diff --cached --quiet || git commit -m "chore: heartbeat ${{ github.run_number }} (${{ job.status }})"
+          git push || echo "heartbeat push skipped (non-fatal)"
+
+      - name: Open alert issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_PAT || github.token }}
+        run: |
+          TITLE="⚠️ Upload falhou — run ${{ github.run_number }}"
+          BODY="Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_number }}
+
+          O upload automático falhou as 3 tentativas. Vê o log do run.
+          Causa mais comum: token do YouTube expirado → re-autenticar."
+          # Reuse existing open alert for this run title to avoid spam
+          EXISTING=$(curl -sS -H "Authorization: token $GH_TOKEN" \
+            "https://api.github.com/search/issues?q=repo:${{ github.repository }}+in:title+state:open+type:issue+${TITLE}" \
+            | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d["items"][0]["number"] if d.get("items") else "")')
+          PAYLOAD=$(python3 -c 'import json,os; print(json.dumps({"title": os.environ["TITLE"], "body": os.environ["BODY"]}))')
+          if [ -n "$EXISTING" ]; then
+            curl -sS -o /dev/null -X PATCH -H "Authorization: token $GH_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/$EXISTING" \
+              -d "$PAYLOAD"
+          else
+            curl -sS -o /dev/null -X POST -H "Authorization: token $GH_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/issues" \
+              -d "$PAYLOAD"
           fi
