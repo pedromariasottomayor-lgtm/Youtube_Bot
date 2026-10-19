@@ -95,10 +95,10 @@ jobs:
       - name: Save updated YouTube token
         if: always() && github.event_name == 'schedule'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_PAT }}
+          GH_TOKEN: ${{ secrets.BOT_PAT }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "GITHUB_PAT secret not set — skipping token refresh."; exit 0
+            echo "BOT_PAT secret not set — skipping token refresh."; exit 0
           fi
           if [ ! -f youtube_token.pickle ]; then
             echo "No token file to save."; exit 0
@@ -124,7 +124,7 @@ jobs:
       - name: Open alert issue on failure
         if: failure()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_PAT || github.token }}
+          GH_TOKEN: ${{ secrets.BOT_PAT || github.token }}
         run: |
           TITLE="⚠️ Upload falhou — run ${{ github.run_number }}"
           BODY="Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_number }}
