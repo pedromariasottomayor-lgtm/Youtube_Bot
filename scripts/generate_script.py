@@ -17,6 +17,10 @@ log = logging.getLogger(__name__)
 
 # ─── CONFIG ──────────────────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+# Optional extra free providers — used automatically if Gemini fails.
+# Any one of these (all free, no credit card) keeps content generation alive.
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 GEMINI_MODELS = [
     # Current models (2026) — older 1.5/2.0 line was shut down by Google.
@@ -139,27 +143,86 @@ def generate_script_with_model(topic: str, model: str, max_retries: int = 2) -> 
 
 
 def generate_script(topic: str, avoid_titles: Optional[list] = None) -> Optional[Dict]:
-    """Generate video script using Gemini API with fallback to offline mode."""
+    """Generate video script: Gemini → OpenRouter → Groq → offline templates."""
     avoid_titles = avoid_titles or []
-    if GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE" or not GEMINI_API_KEY:
-        log.warning("No Gemini API key set, using offline script generation")
-        return generate_script_offline(topic, avoid_titles=avoid_titles)
 
-    for model in GEMINI_MODELS:
-        log.info(f"Trying model: {model}")
-        result = generate_script_with_model(topic, model, max_retries=1)
+    # 1) Gemini (primary)
+    if GEMINI_API_KEY and GEMINI_API_KEY != "YOUR_GEMINI_API_KEY_HERE":
+        for model in GEMINI_MODELS:
+            log.info(f"Trying model: {model}")
+            result = generate_script_with_model(topic, model, max_retries=1)
+            if result:
+                if result.get("title") in avoid_titles:
+                    log.warning(f"Gemini repeated a used title: {result['title']} — retrying")
+                    retry = generate_script_with_model(topic, model, max_retries=1)
+                    if retry and retry.get("title") not in avoid_titles:
+                        return retry
+                return result
+            time.sleep(1)
+        log.warning("All Gemini models failed, trying other providers...")
+    else:
+        log.warning("No Gemini API key set, trying other providers...")
+
+    # 2) OpenRouter (free models)
+    if OPENROUTER_API_KEY:
+        result = _generate_with_openai_compatible(
+            topic, OPENROUTER_API_KEY, "https://openrouter.ai/api/v1",
+            ["meta-llama/llama-3.3-70b-instruct:free", "google/gemma-2-9b-it:free"],
+            avoid_titles,
+        )
         if result:
-            # If Gemini returned a title we already used, regenerate once
-            if result.get("title") in avoid_titles:
-                log.warning(f"Gemini repeated a used title: {result['title']} — retrying")
-                retry = generate_script_with_model(topic, model, max_retries=1)
-                if retry and retry.get("title") not in avoid_titles:
-                    return retry
             return result
-        time.sleep(1)
 
-    log.warning("All Gemini models failed, falling back to offline script generation")
+    # 3) Groq (free tier)
+    if GROQ_API_KEY:
+        result = _generate_with_openai_compatible(
+            topic, GROQ_API_KEY, "https://api.groq.com/openai/v1",
+            ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+            avoid_titles,
+        )
+        if result:
+            return result
+
+    log.warning("All AI providers unavailable, using offline generation")
     return generate_script_offline(topic, avoid_titles=avoid_titles)
+
+
+def _generate_with_openai_compatible(topic, api_key, base_url, models, avoid_titles):
+    """Shared caller for OpenAI-compatible free providers (OpenRouter, Groq)."""
+    prompt = PROMPT_TEMPLATE.format(topic=topic)
+    for model in models:
+        try:
+            payload = json.dumps({
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.8,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                f"{base_url}/chat/completions",
+                data=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=40) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                text = data["choices"][0]["message"]["content"].strip()
+                if text.startswith("```"):
+                    text = text.split("```")[1]
+                    if text.startswith("json"):
+                        text = text[4:]
+                if text.endswith("```"):
+                    text = text.rsplit("```", 1)[0]
+                result = json.loads(text.strip())
+                if result.get("title") and result["title"] not in set(avoid_titles):
+                    log.info(f"Script generated with {model}: {result['title']}")
+                    return result
+        except Exception as e:
+            log.warning(f"Provider {base_url} model {model} failed: {str(e)[:120]}")
+            continue
+    return None
 
 
 # ══════════════════════════════════════════════════════════════════

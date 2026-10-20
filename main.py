@@ -116,6 +116,28 @@ def get_recent_titles(limit: int = 40) -> list:
     return list(dict.fromkeys(titles))
 
 
+def get_channel_titles() -> list:
+    """Fetch every title already on the channel (authoritative anti-duplicate)."""
+    try:
+        from scripts.upload_youtube import get_authenticated_service
+        yt = get_authenticated_service()
+        if not yt:
+            return []
+        titles, page = [], None
+        while True:
+            r = yt.search().list(part="snippet", forMine=True, type="video",
+                                 maxResults=50, pageToken=page).execute()
+            for it in r.get("items", []):
+                titles.append(it["snippet"]["title"])
+            page = r.get("nextPageToken")
+            if not page:
+                break
+        return titles
+    except Exception as e:
+        log.warning(f"Could not fetch channel titles: {str(e)[:120]}")
+        return []
+
+
 def record_content(title: str, hook: str = ""):
     """Remember this title/hook so it is never reused."""
     state = _load_state()
@@ -146,9 +168,22 @@ def run_pipeline(topic: str) -> bool:
 
     # Step 1: Generate Script
     log.info("Step 1: Generating script...")
-    recent_titles = get_recent_titles()
-    log.info(f"Avoiding {len(recent_titles)} recently-used titles")
+    # Anti-duplicate: combine local state + every title already on the channel
+    recent_titles = list(dict.fromkeys(get_recent_titles() + get_channel_titles()))
+    log.info(f"Avoiding {len(recent_titles)} titles already used")
     script_data = generate_script(topic, avoid_titles=recent_titles)
+
+    # If we somehow still got a duplicate title, retry with a fresh generation
+    if script_data and script_data["title"] in recent_titles:
+        log.warning(f"Duplicate title detected ('{script_data['title']}') — regenerating")
+        for _ in range(3):
+            alt = generate_script(topic, avoid_titles=recent_titles)
+            if alt and alt["title"] not in recent_titles:
+                script_data = alt
+                break
+        else:
+            log.warning("Still duplicate after retries — continuing with new title suffix")
+
     if not script_data:
         log.error("Script generation failed. Aborting.")
         return False
