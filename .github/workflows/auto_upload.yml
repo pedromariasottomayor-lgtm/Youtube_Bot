@@ -92,6 +92,8 @@ jobs:
 
       - name: Save state
         if: always()
+        env:
+          GH_TOKEN: ${{ secrets.BOT_PAT }}
         run: |
           # Persist state.json back to the repo itself. The actions/cache
           # store expires after 7 days and silently reset the bot's memory
@@ -100,6 +102,16 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f state.json || true
           git diff --cached --quiet || git commit -m "chore: state update run=${{ github.run_number }}"
+          # Authenticated push so it always works (BOT_PAT with repo scope).
+          if [ -n "$GH_TOKEN" ]; then
+            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          fi
+          for i in 1 2 3; do
+            git pull --rebase --autostash -q || true
+            if git push; then echo "state pushed"; exit 0; fi
+            echo "push attempt $i failed; retrying in 10s"; sleep 10
+          done
+          echo "state push failed (non-fatal — next run will still work)"
 
       - name: Save updated YouTube token
         if: always() && github.event_name == 'schedule'
@@ -119,19 +131,26 @@ jobs:
 
       - name: Heartbeat — keep repo active (never get auto-disabled)
         if: always()
+        env:
+          GH_TOKEN: ${{ secrets.BOT_PAT }}
         run: |
           # GitHub disables scheduled workflows after 60 days without
           # repo activity. This commit guarantees activity every run.
-          # It also pushes the state.json commit made by the previous step.
           git config user.name "mindrank-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mkdir -p .heartbeat
           date -u +"%Y-%m-%dT%H:%M:%SZ run=${{ github.run_number }} status=${{ job.status }}" > .heartbeat/last_run.txt
           git add .heartbeat/last_run.txt
           git diff --cached --quiet || git commit -m "chore: heartbeat ${{ github.run_number }} (${{ job.status }})"
-          # Rebase onto any change made concurrently, then push once.
-          git pull --rebase --autostash -q || true
-          git push || echo "heartbeat push skipped (non-fatal)"
+          if [ -n "$GH_TOKEN" ]; then
+            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          fi
+          for i in 1 2 3; do
+            git pull --rebase --autostash -q || true
+            if git push; then echo "heartbeat pushed"; exit 0; fi
+            echo "push attempt $i failed; retrying in 10s"; sleep 10
+          done
+          echo "heartbeat push skipped (non-fatal)"
 
       - name: Open alert issue on failure
         if: failure()

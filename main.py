@@ -334,11 +334,14 @@ if __name__ == "__main__":
             log.info("Current slot already filled. Exiting cleanly.")
             sys.exit(0)
 
-    # Broad safety cap for the calendar day (YouTube hard limit is 6/day)
-    uploads_today = [t for t in _recent_upload_times(state) if t.strftime("%Y-%m-%d") == today]
-    if len(uploads_today) >= 4:
-        log.info(f"Safety cap reached: {len(uploads_today)} uploads today. Skipping.")
-        sys.exit(0)
+        # Safety cap for the calendar day (YouTube hard limit is 6/day).
+        # Only applies to scheduled runs — a manual run is an explicit
+        # recovery/test and must always be able to publish.
+        uploads_today = [t for t in _recent_upload_times(state)
+                         if t.strftime("%Y-%m-%d") == today]
+        if len(uploads_today) >= 5:
+            log.info(f"Safety cap reached: {len(uploads_today)} uploads today. Skipping.")
+            sys.exit(0)
 
     topic = get_next_topic()
     success = run_pipeline(topic)
