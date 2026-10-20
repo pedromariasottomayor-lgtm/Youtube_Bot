@@ -243,19 +243,101 @@ def run_pipeline(topic: str) -> bool:
         return False
 
 
+# ══════════════════════════════════════════════════════════════════
+#  SCHEDULED SLOTS — the bot must publish in EVERY one of these
+#  slots, every day. Slots are 8h / 14h / 20h UTC.
+#  A slot is "filled" if a video was published in the window
+#  (slot_hour - 1h, slot_hour + 5h]. This replaces the old
+#  "calendar day" counter, which let a manual/test run at 00:xx
+#  consume the whole day's quota and silently skip the real slots.
+# ══════════════════════════════════════════════════════════════════
+SLOT_HOURS_UTC = (8, 14, 20)
+_SLOT_TOLERANCE_BEFORE = timedelta(hours=1)   # GitHub may fire a few min early
+_SLOT_TOLERANCE_AFTER = timedelta(hours=5)    # ...or quite late after an outage
+
+
+def _parse_dt(value: str):
+    """Parse an ISO timestamp from state; return None if unusable."""
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
+    except (ValueError, TypeError):
+        return None
+
+
+def _recent_upload_times(state: dict) -> list:
+    """All upload timestamps we know about (state history + legacy fields)."""
+    times = []
+    for entry in state.get("uploaded_videos", []):
+        if isinstance(entry, dict):
+            dt = _parse_dt(entry.get("upload_time", ""))
+            if dt:
+                times.append(dt)
+    legacy = _parse_dt(state.get("last_upload", ""))
+    if legacy:
+        times.append(legacy)
+    return times
+
+
+def is_manual_run() -> bool:
+    """True when triggered by hand (workflow_dispatch) rather than the cron.
+
+    Manual/test runs must NEVER be blocked by the daily limit — that is
+    exactly how the real scheduled slots got skipped before.
+    """
+    return os.environ.get("GITHUB_EVENT_NAME", "") == "workflow_dispatch"
+
+
+def slot_already_filled(state: dict, now: datetime) -> bool:
+    """Has a video already been published in the current scheduled slot?"""
+    # Determine the slot we are currently in (nearest slot within tolerance)
+    slot_start = None
+    for hour in SLOT_HOURS_UTC:
+        candidate = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+        if candidate - _SLOT_TOLERANCE_BEFORE <= now <= candidate + _SLOT_TOLERANCE_AFTER:
+            slot_start = candidate
+            break
+
+    if slot_start is None:
+        return False  # off-slot run: always allow
+
+    window_end = slot_start + timedelta(hours=6)
+    hits = [dt for dt in _recent_upload_times(state) if slot_start <= dt < window_end]
+    if hits:
+        log.info(f"Slot {slot_start.strftime('%Y-%m-%d %H:%M')} UTC already has "
+                 f"{len(hits)} upload(s) — nothing to do.")
+        return True
+    return False
+
+
 if __name__ == "__main__":
     state = _load_state()
-    today = datetime.now().strftime("%Y-%m-%d")
+    now = datetime.utcnow()
+
+    # Reset the legacy daily counter (kept for backwards compatibility)
+    today = now.strftime("%Y-%m-%d")
     if state.get("today") != today:
         state["today"] = today
         state["videos_today"] = 0
         _save_state(state)
 
-    videos_today = state.get("videos_today", 0)
-    log.info(f"Videos uploaded today: {videos_today}/3")
+    manual = is_manual_run()
+    log.info(f"Trigger: {'manual (workflow_dispatch)' if manual else 'scheduled'} "
+             f"| now={now.strftime('%Y-%m-%d %H:%M')} UTC")
 
-    if videos_today >= 3:
-        log.info("Daily upload limit reached. Skipping.")
+    if manual:
+        # A manual run is a test/recovery: never let it eat a real slot.
+        log.info("Manual run — bypassing slot limit (will not consume a scheduled slot).")
+    else:
+        if slot_already_filled(state, now):
+            log.info("Current slot already filled. Exiting cleanly.")
+            sys.exit(0)
+
+    # Broad safety cap for the calendar day (YouTube hard limit is 6/day)
+    uploads_today = [t for t in _recent_upload_times(state) if t.strftime("%Y-%m-%d") == today]
+    if len(uploads_today) >= 4:
+        log.info(f"Safety cap reached: {len(uploads_today)} uploads today. Skipping.")
         sys.exit(0)
 
     topic = get_next_topic()

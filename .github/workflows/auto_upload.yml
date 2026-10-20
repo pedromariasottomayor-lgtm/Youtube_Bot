@@ -55,11 +55,14 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Restore state
-        uses: actions/cache@v4
-        with:
-          path: state.json
-          key: bot-state-${{ github.run_number }}
-          restore-keys: bot-state-
+        run: |
+          # state.json is committed to the repo (checkout already restored it).
+          # Just make sure it exists so the bot never starts from nothing.
+          if [ ! -f state.json ]; then
+            echo '{"index":0,"videos_today":0,"today":"","total_uploaded":0,"history":[],"uploaded_videos":[],"used_topics":[],"used_titles":[],"used_hooks":[],"last_video_id":"","last_upload":""}' > state.json
+            echo "state.json created fresh."
+          fi
+          echo "state.json entries: $(python3 -c 'import json;print(len(json.load(open("state.json")).get("used_titles",[])))')"
 
       - name: Restore YouTube token
         run: |
@@ -88,11 +91,15 @@ jobs:
           exit 1
 
       - name: Save state
-        if: always() && steps.bot.outputs.bot_ok == 'true'
-        uses: actions/cache@v4
-        with:
-          path: state.json
-          key: bot-state-${{ github.run_number }}
+        if: always()
+        run: |
+          # Persist state.json back to the repo itself. The actions/cache
+          # store expires after 7 days and silently reset the bot's memory
+          # before (causing repeated titles). A real commit never expires.
+          git config user.name "mindrank-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f state.json || true
+          git diff --cached --quiet || git commit -m "chore: state update run=${{ github.run_number }}"
 
       - name: Save updated YouTube token
         if: always() && github.event_name == 'schedule'
@@ -115,12 +122,15 @@ jobs:
         run: |
           # GitHub disables scheduled workflows after 60 days without
           # repo activity. This commit guarantees activity every run.
+          # It also pushes the state.json commit made by the previous step.
           git config user.name "mindrank-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mkdir -p .heartbeat
           date -u +"%Y-%m-%dT%H:%M:%SZ run=${{ github.run_number }} status=${{ job.status }}" > .heartbeat/last_run.txt
           git add .heartbeat/last_run.txt
           git diff --cached --quiet || git commit -m "chore: heartbeat ${{ github.run_number }} (${{ job.status }})"
+          # Rebase onto any change made concurrently, then push once.
+          git pull --rebase --autostash -q || true
           git push || echo "heartbeat push skipped (non-fatal)"
 
       - name: Open alert issue on failure
