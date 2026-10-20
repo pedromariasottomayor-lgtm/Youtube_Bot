@@ -392,14 +392,28 @@ def _generate_gameplay_bg(output_path: str, duration: float):
     clip_path = random.choice(clips)
     log.info(f"Using real gameplay clip: {os.path.basename(clip_path)} ({duration:.0f}s bg)")
 
-    # Subtle Ken Burns: slow zoom in/out + gentle pan, then crop to 9:16
+    # ─── SHARPNESS-FIRST PIPELINE ────────────────────────────────
+    # Clips are stored at 540x960; naively scaling to 1080x1920 blurs
+    # them (soft bicubic look). Instead:
+    #   1. one intermediate lanczos upscale to 810x1440 (1.5x) so the
+    #      pan/zoom moves have more pixels to work with
+    #   2. zoompan/pan rendered at that higher resolution
+    #   3. final lanczos upscale to 1080x1920
+    #   4. unsharp mask restores edge crispness lost in upscaling
+    #   5. mild contrast/saturation keeps gameplay punchy, not washed
     filter_chain = (
-        "scale=1080:1920:force_original_aspect_ratio=increase,"
-        "crop=1080:1920,"
-        "zoompan=z='1.05+0.04*sin(on/60)':"
-        "x='iw/2-(iw/zoom/2)+20*sin(on/45)':"
-        "y='ih/2-(ih/zoom/2)+10*cos(on/35)':"
-        "d=1:s=1080x1920:fps=30,"
+        "scale=810:1440:flags=lanczos,"
+        # Pan & zoom at 1.5x resolution — keeps detail intact
+        "zoompan=z='1.08+0.05*sin(on/60)':"
+        "x='iw/2-(iw/zoom/2)+24*sin(on/45)':"
+        "y='ih/2-(ih/zoom/2)+12*cos(on/35)':"
+        "d=1:s=810x1440:fps=30,"
+        # Single high-quality resample straight to target
+        "scale=1080:1920:flags=lanczos+accurate_rnd+full_chroma_int,"
+        # Restore crispness lost while upscaling
+        "unsharp=7:7:1.3:7:7:0.0,"
+        # Punchier, more "viral" colour without destroying skin tones
+        "eq=contrast=1.06:saturation=1.18:brightness=0.01,"
         "format=yuv420p"
     )
 
@@ -409,7 +423,7 @@ def _generate_gameplay_bg(output_path: str, duration: float):
         "-i", clip_path,
         "-t", str(duration),
         "-vf", filter_chain,
-        "-c:v", "libx264", "-preset", "fast", "-crf", "24",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "20",
         "-pix_fmt", "yuv420p",
         "-an",
         output_path

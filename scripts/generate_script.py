@@ -19,10 +19,14 @@ log = logging.getLogger(__name__)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 GEMINI_MODELS = [
-    "gemini-2.0-flash-lite",
-    "gemini-2.0-flash",
+    # Current models (2026) — older 1.5/2.0 line was shut down by Google.
+    # Ordered fastest/cheapest first, then fall back to more capable ones.
+    "gemini-flash-latest",
+    "gemini-3-flash-preview",
+    "gemini-3.1-flash-lite-preview",
     "gemini-2.5-flash",
-    "gemini-1.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-pro-latest",
 ]
 
 
@@ -30,19 +34,25 @@ def get_gemini_url(model):
     return f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
 
 
-PROMPT_TEMPLATE = """You are a viral YouTube Shorts scriptwriter for "MindRank" — a psychology/facts channel.
+PROMPT_TEMPLATE = """You are a viral YouTube Shorts scriptwriter for "MindRank" — a psychology/facts channel with 1M+ view potential.
 
 Write a script for: "{topic}"
 
 RULES (2026 algorithm optimized):
 1. EXACTLY 80-120 words (25-35 seconds when spoken at normal pace)
-2. First sentence = PATTERN INTERRUPT or CONTRADICTION (stops the scroll)
+2. First sentence = PATTERN INTERRUPT or CONTRADICTION (stops the scroll within 2s)
 3. Every 15-20 words, add a micro-payoff (statistic, reveal, or escalation)
 4. Last sentence = LOOP TRIGGER ("Watch this again and notice..." / "The last one is insane...")
 5. Use short punchy sentences. No fluff. No intro. No background.
 6. Specific numbers beat vague claims ("73%" better than "most")
 7. Second person ("you") creates personal relevance
 8. Create ONE curiosity gap and resolve it at the end
+
+TITLE RULES (critical for CTR):
+- Max 50 characters. Punchy. Emotional. Curiosity-driven.
+- NEVER start with "I" or describe yourself. Speak TO the viewer.
+- Best performers: identity bait ("If you..."), contradiction, forbidden insider, number reveal
+- Examples: "Your Brain Lies To You Every Morning", "Why Smart People Are Lonely", "The Trick That Exposes Any Liar"
 
 HOOK FORMULA (pick one):
 - Pattern Interrupt: "Stop doing X" / "Wrong. Here's why"
@@ -55,7 +65,7 @@ HOOK FORMULA (pick one):
 
 Return ONLY valid JSON:
 {{
-  "title": "Title (max 50 chars, uses the hook formula)",
+  "title": "Title (max 50 chars, uses hook formula)",
   "script": "Full narration (80-120 words)",
   "description": "2-3 sentences + hashtags",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
@@ -128,21 +138,28 @@ def generate_script_with_model(topic: str, model: str, max_retries: int = 2) -> 
     return None
 
 
-def generate_script(topic: str) -> Optional[Dict]:
+def generate_script(topic: str, avoid_titles: Optional[list] = None) -> Optional[Dict]:
     """Generate video script using Gemini API with fallback to offline mode."""
+    avoid_titles = avoid_titles or []
     if GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE" or not GEMINI_API_KEY:
         log.warning("No Gemini API key set, using offline script generation")
-        return generate_script_offline(topic)
+        return generate_script_offline(topic, avoid_titles=avoid_titles)
 
     for model in GEMINI_MODELS:
         log.info(f"Trying model: {model}")
         result = generate_script_with_model(topic, model, max_retries=1)
         if result:
+            # If Gemini returned a title we already used, regenerate once
+            if result.get("title") in avoid_titles:
+                log.warning(f"Gemini repeated a used title: {result['title']} — retrying")
+                retry = generate_script_with_model(topic, model, max_retries=1)
+                if retry and retry.get("title") not in avoid_titles:
+                    return retry
             return result
         time.sleep(1)
 
     log.warning("All Gemini models failed, falling back to offline script generation")
-    return generate_script_offline(topic)
+    return generate_script_offline(topic, avoid_titles=avoid_titles)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -642,9 +659,11 @@ _VARIETY_SCRIPTS = {
 }
 
 
-def _pick_best_script(topic: str) -> dict:
-    """Pick the best script based on topic keywords, with variety."""
+def _pick_best_script(topic: str, avoid_titles: Optional[list] = None) -> dict:
+    """Pick the best script based on topic keywords, with variety.
+    Never returns a script whose title is in avoid_titles (unless all are used)."""
     topic_lower = topic.lower()
+    avoid_titles = set(avoid_titles or [])
 
     # Keyword-to-formula mapping (which formula works best for which topic type)
     keyword_formula_map = {
@@ -738,12 +757,24 @@ def _pick_best_script(topic: str) -> dict:
         for scripts in _VARIETY_SCRIPTS.values():
             candidates.extend(scripts)
 
+    # Prefer candidates whose title was NOT already used
+    fresh = [c for c in candidates if c.get("title") not in avoid_titles]
+    if fresh:
+        candidates = fresh
+
     return random.choice(candidates)
 
 
-def generate_script_offline(topic: str) -> dict:
+def generate_script_offline(topic: str, avoid_titles: Optional[list] = None) -> dict:
     """Generate viral scripts offline using proven 2026 hook formulas."""
-    best_match = _pick_best_script(topic)
+    best_match = _pick_best_script(topic, avoid_titles=avoid_titles)
+
+    # If every fixed template's title was already used, synthesise a
+    # brand-new script straight from the topic (endless fresh content).
+    avoid_set = set(avoid_titles or [])
+    if avoid_set and best_match.get("title") in avoid_set:
+        log.info("All matching templates used — synthesising a fresh script from topic")
+        return _generate_infinite_script(topic, avoid_titles=avoid_set)
 
     # Build full script
     script_text = best_match["hook"] + " " + " ".join(best_match["body"]) + " " + best_match["closer"]
@@ -759,14 +790,168 @@ def generate_script_offline(topic: str) -> dict:
     return {
         "title": title,
         "script": script_text,
-        "description": (
-            f"Your brain is hiding something from you right now... "
-            f"Follow @MindRank for more psychology facts nobody talks about. "
-            f"#psychology #mindrank #facts #humanbehavior #mindblown #shorts #darkpsychology #viral"
-        ),
+        "description": _build_description(best_match, topic),
         "tags": base_tags + extra_tags,
         "hook": best_match["hook"],
         "hook_formula": best_match.get("formula", "unknown"),
+        "sections": ["Hook", "Reveal", "Deep Dive", "Mind-Blow", "Loop Trigger"],
+    }
+
+
+# Top-performing hashtags for psychology/mind Shorts (2026)
+_VIRAL_HASHTAGS = [
+    "#psychology", "#shorts", "#mindset", "#humanbehavior", "#darkpsychology",
+    "#selfimprovement", "#facts", "#mindblowing", "#mentalhealth", "#stoicism",
+]
+
+
+def _build_description(script_match: dict, topic: str) -> str:
+    """SEO + CTR optimised description: hook up top, hashtags near front,
+    keyword-rich paragraph, and a strong subscribe CTA."""
+    hook = script_match.get("hook", "")
+    # First 2 lines are what shows in search/feed before "more"
+    hashtags = " ".join(_VIRAL_HASHTAGS[:5])
+    tags_line = " ".join(_VIRAL_HASHTAGS[5:])
+    return (
+        f"{hook}\n\n"
+        f"{hashtags}\n\n"
+        f"{topic} — and the psychology behind why your brain does it. "
+        f"Most people never notice this, but once you see it you can't unsee it.\n\n"
+        f"👉 Follow @MindRank for daily psychology facts that change how you see people.\n"
+        f"🔔 Subscribe so you never miss one — new shorts every single day.\n"
+        f"💬 Which part hit hardest? Comment below.\n\n"
+        f"Tags: psychology facts, human behavior, dark psychology, mind tricks, "
+        f"body language, self improvement, mental health, brain facts, "
+        f"stoicism, mindset shift\n"
+        f"{tags_line}"
+    )
+
+
+def _generate_infinite_script(topic: str, avoid_titles: Optional[list] = None) -> Optional[dict]:
+    """Build a unique script straight from the topic itself.
+
+    Used when the fixed template pool is exhausted — guarantees endless
+    fresh content (title + hook + body) even with no Gemini API key.
+    Thousands of combinations per topic.
+    """
+    topic_clean = topic.strip().rstrip(".?!")
+
+    hook_templates = [
+        "Stop scrolling. {t} — and almost nobody knows why.",
+        "Everyone gets this wrong about {t_lower}.",
+        "They don't want you to understand {t_lower}. Here it is.",
+        "If you relate to {t_lower}, you're not broken. You're this.",
+        "There's a reason behind {t_lower} — and it's not what you think.",
+        "This is the truth about {t_lower} that changes everything.",
+        "Wait until you hear what's really going on with {t_lower}.",
+        "You've been lied to about {t_lower} your whole life.",
+    ]
+    body_openers = [
+        "Here's what actually happens in your brain.",
+        "Psychologists studied this for decades. The answer is uncomfortable.",
+        "It starts before you even notice it.",
+        "The science here is stranger than you'd expect.",
+        "This is wired into you from birth.",
+        "Your brain does this automatically, without asking.",
+    ]
+    body_mids = [
+        "Your nervous system treats it like a threat, even when it isn't one.",
+        "It hijacks the same pathways that keep you alive.",
+        "The more you fight it, the stronger it gets.",
+        "Most people never connect the dots, so it controls them silently.",
+        "It shows up in the exact moment you least expect it.",
+        "Researchers found it affects roughly 9 in 10 people.",
+        "It's not a character flaw — it's biology doing its job.",
+        "Small triggers build up until they run your entire day.",
+    ]
+    body_ends = [
+        "Once you see the pattern, you can't unsee it.",
+        "And the fix is simpler than the problem.",
+        "This is why it feels so impossible to stop.",
+        "The first step is simply noticing it in real time.",
+        "Awareness alone weakens its grip by half.",
+        "The people who master this live completely differently.",
+    ]
+    closers = [
+        "Watch this again and notice where it shows up in your day.",
+        "Save this before you forget it. Then watch it once more.",
+        "Follow for the psychology nobody teaches you.",
+        "Now you'll spot it everywhere. Watch again to be sure.",
+    ]
+    title_templates = [
+        "The Truth About {t_short} Nobody Tells You",
+        "Why {t_short} Controls You Silently",
+        "You've Been Wrong About {t_short}",
+        "The Hidden Reason Behind {t_short}",
+        "What {t_short} Really Means",
+        "Stop Ignoring {t_short}",
+        "The Real Science Of {t_short}",
+        "How {t_short} Rewires Your Brain",
+        "{t_short}: The Part Nobody Explains",
+        "This Is Why {t_short} Happens To You",
+        "Nobody Warned You About {t_short}",
+        "The Dark Side Of {t_short}",
+        "{t_short} Is Not What You Think",
+        "Why You Can't Escape {t_short}",
+        "What Your Brain Hides About {t_short}",
+        "The Psychology Behind {t_short}",
+    ]
+
+    keyword_map = [
+        ("procrastinat", "procrastination"),
+        ("brain", "your brain"),
+        ("manipulat", "manipulation"),
+        ("narcissist", "narcissists"),
+        ("friendship", "friendship"),
+        ("lonely", "loneliness"),
+        ("dopamine", "dopamine"),
+        ("anxiety", "anxiety"),
+        ("confidence", "confidence"),
+        ("habit", "your habits"),
+        ("sleep", "your sleep"),
+        ("memory", "your memory"),
+        ("focus", "your focus"),
+        ("fear", "fear"),
+        ("attract", "why you attract people"),
+        ("toxic", "toxic people"),
+        ("body language", "body language"),
+        ("empath", "being an empath"),
+        ("introvert", "being an introvert"),
+        ("overthink", "overthinking"),
+    ]
+    t_lower = topic_clean.lower()
+    for kw, repl in keyword_map:
+        if kw in t_lower:
+            t_lower = repl
+            break
+
+    t_short = t_lower if len(t_lower) <= 40 else t_lower[:40].rsplit(" ", 1)[0]
+
+    hook = random.choice(hook_templates).format(t=topic_clean.rstrip("."), t_lower=t_lower)
+
+    # Pick a title that has not been used yet (avoid_titles), if possible
+    avoid_set = set(avoid_titles or [])
+    all_titles = [tpl.format(t_short=t_short.title()) for tpl in title_templates]
+    fresh_titles = [t for t in all_titles if t not in avoid_set]
+    title = random.choice(fresh_titles or all_titles)
+
+    body = [
+        random.choice(body_openers) + " " + random.choice(body_mids),
+        random.choice(body_mids).capitalize() + ". " + random.choice(body_ends),
+        f"So when it comes to {t_lower}, you're not the problem. The pattern is.",
+    ]
+    closer = random.choice(closers)
+
+    script_text = hook + " " + " ".join(body) + " " + closer
+
+    return {
+        "title": title,
+        "script": script_text,
+        "description": _build_description({"hook": hook}, topic_clean),
+        "tags": ["psychology", "mindrank", "facts", "humanbehavior", "mindblown",
+                 "shorts", "darkpsychology", "secret", "nevertellyou"],
+        "hook": hook,
+        "hook_formula": "topic_synthesis",
         "sections": ["Hook", "Reveal", "Deep Dive", "Mind-Blow", "Loop Trigger"],
     }
 

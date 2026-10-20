@@ -104,6 +104,27 @@ def get_next_topic() -> str:
     return topic
 
 
+def get_recent_titles(limit: int = 40) -> list:
+    """Return recently-used titles so the generator never repeats one."""
+    state = _load_state()
+    titles = []
+    for entry in state.get("uploaded_videos", [])[-limit:]:
+        if isinstance(entry, dict) and entry.get("title"):
+            titles.append(entry["title"])
+    # Also include any titles explicitly tracked
+    titles.extend(state.get("used_titles", [])[-limit:])
+    return list(dict.fromkeys(titles))
+
+
+def record_content(title: str, hook: str = ""):
+    """Remember this title/hook so it is never reused."""
+    state = _load_state()
+    state["used_titles"] = (state.get("used_titles", []) + [title])[-100:]
+    if hook:
+        state["used_hooks"] = (state.get("used_hooks", []) + [hook])[-100:]
+    _save_state(state)
+
+
 def cleanup_old_files():
     """Remove old video/audio files to save disk space (keep last 3)."""
     for pattern in ["output/video_*.mp4", "output/video_*.mp3", "output/video_*.ass",
@@ -125,7 +146,9 @@ def run_pipeline(topic: str) -> bool:
 
     # Step 1: Generate Script
     log.info("Step 1: Generating script...")
-    script_data = generate_script(topic)
+    recent_titles = get_recent_titles()
+    log.info(f"Avoiding {len(recent_titles)} recently-used titles")
+    script_data = generate_script(topic, avoid_titles=recent_titles)
     if not script_data:
         log.error("Script generation failed. Aborting.")
         return False
@@ -133,6 +156,8 @@ def run_pipeline(topic: str) -> bool:
     log.info(f"Title: {script_data['title']}")
     log.info(f"Script length: {len(script_data['script'].split())} words")
     log.info(f"Hook formula: {script_data.get('hook_formula', 'unknown')}")
+    # Remember this content immediately so a retry/next run cannot repeat it
+    record_content(script_data["title"], script_data.get("hook", ""))
 
     # Step 2: Generate Voiceover
     log.info("Step 2: Generating voiceover...")

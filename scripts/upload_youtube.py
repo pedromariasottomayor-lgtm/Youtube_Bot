@@ -5,6 +5,7 @@ Install: pip install google-auth-oauthlib google-api-python-client
 """
 
 import os
+import time
 import logging
 import pickle
 from typing import Optional, List
@@ -214,16 +215,19 @@ def upload_to_youtube(
         video_id = response.get("id")
         log.info(f"Upload complete! Video ID: {video_id}")
 
-        # Set thumbnail if provided
+        # Set thumbnail if provided (retry — 403 is often transient)
         if thumbnail_path and os.path.exists(thumbnail_path):
-            try:
-                service.thumbnails().set(
-                    videoId=video_id,
-                    media_body=MediaFileUpload(thumbnail_path)
-                ).execute()
-                log.info("Thumbnail uploaded successfully")
-            except Exception as e:
-                log.warning(f"Thumbnail upload failed (video still uploaded): {e}")
+            for attempt in range(3):
+                try:
+                    service.thumbnails().set(
+                        videoId=video_id,
+                        media_body=MediaFileUpload(thumbnail_path)
+                    ).execute()
+                    log.info("Thumbnail uploaded successfully")
+                    break
+                except Exception as e:
+                    log.warning(f"Thumbnail attempt {attempt+1} failed: {str(e)[:150]}")
+                    time.sleep(5)
 
         return video_id
 
