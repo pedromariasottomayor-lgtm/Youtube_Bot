@@ -221,14 +221,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 # ══════════════════════════════════════════════════════════════════
 
 def generate_thumbnail(script_data: dict, output_path: str) -> str:
-    """Generate a viral vertical (1080x1920) Shorts thumbnail.
+    """Generate a viral YouTube thumbnail (1280x720, the format YouTube
+    enforces for every video — vertical images get cropped).
 
     Uses a real gameplay frame as the backdrop + huge bold hook text with a
-    strong colour pop. This matches how top Shorts channels design covers.
+    strong colour pop, matching how top Shorts channels design covers.
     """
     from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
 
-    thumb_w, thumb_h = 1080, 1920
+    thumb_w, thumb_h = 1280, 720
 
     title = script_data.get("title", "THE SECRET NOBODY TELLS YOU")
     clean_title = title
@@ -280,26 +281,25 @@ def generate_thumbnail(script_data: dict, output_path: str) -> str:
 
     draw = ImageDraw.Draw(img)
 
-    # ─── Soft scrim only in the very top text band (keeps gameplay vivid) ───
-    overlay = Image.new("RGBA", (thumb_w, thumb_h), (0, 0, 0, 0))
-    ovl = ImageDraw.Draw(overlay)
-    for y in range(thumb_h):
-        ratio = y / thumb_h
-        if ratio < 0.5:
-            alpha = int(55 * (1 - ratio / 0.5) ** 0.9)
-        else:
-            alpha = 0
-        ovl.line([(0, y), (thumb_w, y)], fill=(0, 0, 0, alpha))
-    img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+    # ─── Soft horizontal scrim behind the centred text band ───
+    import numpy as _np
+    base = _np.asarray(img.convert("RGB"), dtype=_np.float32)
+    w = thumb_w
+    ramp = _np.arange(w, dtype=_np.float32) / w
+    # Darken the middle third horizontally + a mild bottom bar
+    centre = _np.exp(-((ramp - 0.5) ** 2) / (2 * 0.16 ** 2))
+    alpha = (70.0 * centre).astype(_np.float32)[None, :, None]
+    base = base * (1.0 - alpha / 255.0)
+    img = Image.fromarray(base.astype(_np.uint8), "RGB")
     draw = ImageDraw.Draw(img)
 
-    # ─── HUGE bold hook text, centred, upper-middle ───
-    lines = textwrap.wrap(clean_title.upper(), width=13)[:3]
-    font_size = 132 if len(lines) <= 2 else 112
+    # ─── HUGE bold hook text, centred across the frame ───
+    lines = textwrap.wrap(clean_title.upper(), width=18)[:3]
+    font_size = 118 if len(lines) <= 2 else 100
     font = get_font(font_size, bold=True)
-    line_h = int(font_size * 1.15)
+    line_h = int(font_size * 1.18)
     total_h = len(lines) * line_h
-    ty = int(thumb_h * 0.12) + max(0, (int(thumb_h * 0.45) - total_h) // 2)
+    ty = max(60, (thumb_h - total_h) // 2)
 
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
@@ -308,20 +308,20 @@ def generate_thumbnail(script_data: dict, output_path: str) -> str:
         glow = Image.new("RGB", (thumb_w, thumb_h), (0, 0, 0))
         gd = ImageDraw.Draw(glow)
         gd.text((tx, ty), line, font=font, fill=ACCENT_YELLOW)
-        glow = glow.filter(ImageFilter.GaussianBlur(18))
-        img = Image.blend(img, glow, 0.45)
+        glow = glow.filter(ImageFilter.GaussianBlur(16))
+        img = Image.blend(img, glow, 0.40)
         draw = ImageDraw.Draw(img)
         # Thick black outline for maximum contrast
-        for dx in range(-7, 8):
-            for dy in range(-7, 8):
+        for dx in range(-6, 7):
+            for dy in range(-6, 7):
                 if abs(dx) > 2 or abs(dy) > 2:
                     draw.text((tx + dx, ty + dy), line, font=font, fill=(0, 0, 0))
         draw.text((tx, ty), line, font=font, fill=ACCENT_YELLOW)
         ty += line_h
 
     # ─── MindRank logo top-left, subtle ───
-    logo_font = get_font(44, bold=True)
-    draw.text((40, 48), "MindRank", font=logo_font, fill=ACCENT_CYAN)
+    logo_font = get_font(40, bold=True)
+    draw.text((36, 34), "MindRank", font=logo_font, fill=ACCENT_CYAN)
 
     img.save(output_path, "JPEG", quality=94)
 
