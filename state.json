@@ -1,8 +1,8 @@
 {
-  "index": 52,
-  "videos_today": 0,
+  "index": 53,
+  "videos_today": 1,
   "today": "2026-10-20",
-  "total_uploaded": 52,
+  "total_uploaded": 53,
   "history": [],
   "uploaded_videos": [
     {
@@ -264,9 +264,18 @@
       "video_id": "ZotF-_g2Q-E",
       "title": "Why You\u2019ll Never Be Rich (It\u2019s Not Luck)",
       "upload_time": "2026-10-20T00:42:14Z"
+    },
+    {
+      "video_id": "0B9CpWcxom8",
+      "title": "Your Brain Can't Tell If You're Dying",
+      "topic": "Why your brain can't distinguish real from fake danger",
+      "upload_time": "2026-10-20T16:42:08.293253",
+      "hook_formula": "Contradiction"
     }
   ],
-  "used_topics": [],
+  "used_topics": [
+    "Why your brain can't distinguish real from fake danger"
+  ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
     "Amazing Facts: 7 signs you are smarter than you think",
@@ -307,9 +316,10 @@
     "Your Phone Is Rewiring Your Brain",
     "Why Toxic People Feel Like Soulmates",
     "Why You Can't Move On (Brain Hack)",
-    "Why You\u2019ll Never Be Rich (It\u2019s Not Luck)"
+    "Why You\u2019ll Never Be Rich (It\u2019s Not Luck)",
+    "Your Brain Can't Tell If You're Dying"
   ],
   "used_hooks": [],
-  "last_video_id": "ZotF-_g2Q-E",
-  "last_upload": "2026-10-20T00:42:14Z"
+  "last_video_id": "0B9CpWcxom8",
+  "last_upload": "2026-10-20T16:42:08.293238"
 }
