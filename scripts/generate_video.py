@@ -221,16 +221,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 # ══════════════════════════════════════════════════════════════════
 
 def generate_thumbnail(script_data: dict, output_path: str) -> str:
-    """Generate super-clickbait thumbnail for YouTube Shorts cover.
+    """Generate a viral vertical (1080x1920) Shorts thumbnail.
 
-    This is the static image shown on the channel page and in search results.
-    NOT shown inside the video itself.
+    Uses a real gameplay frame as the backdrop + huge bold hook text with a
+    strong colour pop. This matches how top Shorts channels design covers.
     """
-    from PIL import Image, ImageDraw, ImageFilter
+    from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
 
-    thumb_w, thumb_h = 1280, 720
-    img = Image.new("RGB", (thumb_w, thumb_h), (5, 5, 12))
-    draw = ImageDraw.Draw(img)
+    thumb_w, thumb_h = 1080, 1920
 
     title = script_data.get("title", "THE SECRET NOBODY TELLS YOU")
     clean_title = title
@@ -239,81 +237,102 @@ def generate_thumbnail(script_data: dict, output_path: str) -> str:
             clean_title = clean_title[len(prefix):].strip()
             break
 
-    # Dramatic gradient background
+    # ─── Backdrop: real gameplay frame if available, else gradient ───
+    img = None
+    clips = _find_gameplay_clips()
+    if clips:
+        try:
+            import subprocess as _sp
+            frame_path = output_path.rsplit(".", 1)[0] + "_frame.jpg"
+            clip = random.choice(clips)
+            # Grab a frame ~1/3 into the clip (usually the most dynamic part)
+            _sp.run([
+                FFMPEG, "-y", "-ss", "3", "-i", clip,
+                "-frames:v", "1", "-vf",
+                f"scale={thumb_w}:{thumb_h}:force_original_aspect_ratio=increase,"
+                f"crop={thumb_w}:{thumb_h},eq=brightness=0.02:saturation=1.35:contrast=1.1",
+                frame_path
+            ], capture_output=True, timeout=30)
+            if os.path.exists(frame_path) and os.path.getsize(frame_path) > 1000:
+                img = Image.open(frame_path).convert("RGB").resize((thumb_w, thumb_h))
+                img = ImageEnhance.Color(img).enhance(1.2)
+                # Auto-normalise brightness so every cover pops, even from
+                # dark gameplay clips. Target a lively mid-bright level.
+                import numpy as _np
+                lum = _np.array(img.convert("L")).mean()
+                if lum > 0:
+                    factor = min(3.5, max(0.9, 150.0 / lum))
+                    img = ImageEnhance.Brightness(img).enhance(factor)
+                # Lift shadows a touch for punch
+                img = ImageEnhance.Contrast(img).enhance(1.08)
+        except Exception as e:
+            log.warning(f"Thumbnail frame grab failed: {str(e)[:100]}")
+
+    if img is None:
+        img = Image.new("RGB", (thumb_w, thumb_h), (5, 5, 12))
+        _d = ImageDraw.Draw(img)
+        for y in range(thumb_h):
+            ratio = y / thumb_h
+            r = int(8 + 40 * math.sin(ratio * 3.5))
+            g = int(2 + 8 * ratio)
+            b = int(18 + 60 * (1 - ratio))
+            _d.line([(0, y), (thumb_w, y)], fill=(r, g, b))
+
+    draw = ImageDraw.Draw(img)
+
+    # ─── Soft scrim only in the very top text band (keeps gameplay vivid) ───
+    overlay = Image.new("RGBA", (thumb_w, thumb_h), (0, 0, 0, 0))
+    ovl = ImageDraw.Draw(overlay)
     for y in range(thumb_h):
         ratio = y / thumb_h
-        r = int(8 + 40 * math.sin(ratio * 3.5))
-        g = int(2 + 8 * ratio)
-        b = int(18 + 60 * (1 - ratio) + 20 * math.sin(ratio * 2))
-        draw.line([(0, y), (thumb_w, y)], fill=(r, g, b))
+        if ratio < 0.5:
+            alpha = int(55 * (1 - ratio / 0.5) ** 0.9)
+        else:
+            alpha = 0
+        ovl.line([(0, y), (thumb_w, y)], fill=(0, 0, 0, alpha))
+    img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
+    draw = ImageDraw.Draw(img)
 
-    # Glowing orbs for drama
-    for _ in range(12):
-        cx = random.randint(-50, thumb_w + 50)
-        cy = random.randint(-50, thumb_h + 50)
-        radius = random.randint(80, 250)
-        color = random.choice([ACCENT_CYAN, (123, 47, 187), (255, 50, 50), ACCENT_YELLOW])
-        r, g, b = color
-        for i in range(radius, 0, -4):
-            alpha_factor = (1 - i / radius) ** 2
-            a = int(50 * alpha_factor)
-            if a < 1:
-                continue
-            draw.ellipse([cx - i, cy - i, cx + i, cy + i], fill=(r, g, b))
+    # ─── HUGE bold hook text, centred, upper-middle ───
+    lines = textwrap.wrap(clean_title.upper(), width=13)[:3]
+    font_size = 132 if len(lines) <= 2 else 112
+    font = get_font(font_size, bold=True)
+    line_h = int(font_size * 1.15)
+    total_h = len(lines) * line_h
+    ty = int(thumb_h * 0.12) + max(0, (int(thumb_h * 0.45) - total_h) // 2)
 
-    # Shocked face on the left
-    face_cx, face_cy = 200, 360
-    face_r = 100
-    draw.ellipse([face_cx - face_r, face_cy - face_r, face_cx + face_r, face_cy + face_r],
-                 fill=(220, 180, 150))
-    # Wide shocked eyes
-    eye_y = face_cy - 25
-    for ex in [face_cx - 32, face_cx + 32]:
-        draw.ellipse([ex - 20, eye_y - 18, ex + 20, eye_y + 18], fill=(255, 255, 255))
-        draw.ellipse([ex - 10, eye_y - 10, ex + 10, eye_y + 10], fill=(20, 20, 30))
-        draw.ellipse([ex + 3, eye_y - 7, ex + 9, eye_y - 1], fill=(255, 255, 255))
-    # Open mouth (shocked)
-    mouth_y = face_cy + 40
-    draw.ellipse([face_cx - 22, mouth_y - 16, face_cx + 22, mouth_y + 22], fill=(150, 50, 50))
-    # Raised eyebrows
-    draw.line([face_cx - 45, eye_y - 35, face_cx - 10, eye_y - 28], fill=(80, 50, 30), width=6)
-    draw.line([face_cx + 10, eye_y - 28, face_cx + 45, eye_y - 35], fill=(80, 50, 30), width=6)
-
-    # Yellow arrow pointing to text
-    draw.polygon([(340, 360), (400, 330), (400, 390)], fill=ACCENT_YELLOW)
-
-    # BIG bold text — as large as possible, right side
-    font = get_font(96, bold=True)
-    lines = textwrap.wrap(clean_title.upper(), width=16)
-    total_h = len(lines) * 108
-    ty = (thumb_h - total_h) // 2
-
-    for line in lines[:3]:
+    for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
-        tx = max(420, (thumb_w - (bbox[2] - bbox[0])) // 2)
-
+        tx = (thumb_w - (bbox[2] - bbox[0])) // 2
         # Glow
-        glow_img = Image.new("RGB", (thumb_w, thumb_h), (0, 0, 0))
-        glow_draw = ImageDraw.Draw(glow_img)
-        glow_draw.text((tx, ty), line, font=font, fill=ACCENT_YELLOW)
-        glow_img = glow_img.filter(ImageFilter.GaussianBlur(16))
-        img = Image.blend(img, glow_img, 0.5)
+        glow = Image.new("RGB", (thumb_w, thumb_h), (0, 0, 0))
+        gd = ImageDraw.Draw(glow)
+        gd.text((tx, ty), line, font=font, fill=ACCENT_YELLOW)
+        glow = glow.filter(ImageFilter.GaussianBlur(18))
+        img = Image.blend(img, glow, 0.45)
         draw = ImageDraw.Draw(img)
-
-        # Shadow
-        for dx in range(-6, 7):
-            for dy in range(-6, 7):
-                draw.text((tx + dx, ty + dy), line, font=font, fill=(0, 0, 0))
-        # Main text
+        # Thick black outline for maximum contrast
+        for dx in range(-7, 8):
+            for dy in range(-7, 8):
+                if abs(dx) > 2 or abs(dy) > 2:
+                    draw.text((tx + dx, ty + dy), line, font=font, fill=(0, 0, 0))
         draw.text((tx, ty), line, font=font, fill=ACCENT_YELLOW)
+        ty += line_h
 
-        ty += 108
+    # ─── MindRank logo top-left, subtle ───
+    logo_font = get_font(44, bold=True)
+    draw.text((40, 48), "MindRank", font=logo_font, fill=ACCENT_CYAN)
 
-    # MindRank logo
-    logo_font = get_font(32, bold=True)
-    draw.text((30, 22), "MindRank", font=logo_font, fill=ACCENT_CYAN)
+    img.save(output_path, "JPEG", quality=94)
 
-    img.save(output_path, "JPEG", quality=95)
+    # Cleanup temp frame
+    try:
+        fp = output_path.rsplit(".", 1)[0] + "_frame.jpg"
+        if os.path.exists(fp):
+            os.remove(fp)
+    except OSError:
+        pass
+
     log.info(f"Thumbnail saved: {output_path}")
     return output_path
 
