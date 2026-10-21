@@ -1,8 +1,8 @@
 {
-  "index": 53,
+  "index": 54,
   "videos_today": 1,
-  "today": "2026-10-20",
-  "total_uploaded": 53,
+  "today": "2026-10-21",
+  "total_uploaded": 54,
   "history": [],
   "uploaded_videos": [
     {
@@ -271,10 +271,18 @@
       "topic": "Why your brain can't distinguish real from fake danger",
       "upload_time": "2026-10-20T16:42:08.293253",
       "hook_formula": "Contradiction"
+    },
+    {
+      "video_id": "YWj8Wq0TwCk",
+      "title": "Why Your Brain Deletes Your Memories",
+      "topic": "The psychological reason you forget things instantly",
+      "upload_time": "2026-10-21T13:24:20.747575",
+      "hook_formula": "Contradiction"
     }
   ],
   "used_topics": [
-    "Why your brain can't distinguish real from fake danger"
+    "Why your brain can't distinguish real from fake danger",
+    "The psychological reason you forget things instantly"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -317,9 +325,10 @@
     "Why Toxic People Feel Like Soulmates",
     "Why You Can't Move On (Brain Hack)",
     "Why You\u2019ll Never Be Rich (It\u2019s Not Luck)",
-    "Your Brain Can't Tell If You're Dying"
+    "Your Brain Can't Tell If You're Dying",
+    "Why Your Brain Deletes Your Memories"
   ],
   "used_hooks": [],
-  "last_video_id": "0B9CpWcxom8",
-  "last_upload": "2026-10-20T16:42:08.293238"
+  "last_video_id": "YWj8Wq0TwCk",
+  "last_upload": "2026-10-21T13:24:20.747562"
 }
