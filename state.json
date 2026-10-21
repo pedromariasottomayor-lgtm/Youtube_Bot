@@ -1,8 +1,8 @@
 {
-  "index": 55,
-  "videos_today": 2,
+  "index": 56,
+  "videos_today": 3,
   "today": "2026-10-21",
-  "total_uploaded": 55,
+  "total_uploaded": 56,
   "history": [],
   "uploaded_videos": [
     {
@@ -285,12 +285,20 @@
       "topic": "The money mindset that separates rich from poor",
       "upload_time": "2026-10-21T18:30:51.482334",
       "hook_formula": "topic_synthesis"
+    },
+    {
+      "video_id": "s22GvZez1Lg",
+      "title": "Nobody Warned You About The Psychological Reason You Can'T Nap",
+      "topic": "The psychological reason you can't nap during the day",
+      "upload_time": "2026-10-21T23:10:30.338582",
+      "hook_formula": "topic_synthesis"
     }
   ],
   "used_topics": [
     "Why your brain can't distinguish real from fake danger",
     "The psychological reason you forget things instantly",
-    "The money mindset that separates rich from poor"
+    "The money mindset that separates rich from poor",
+    "The psychological reason you can't nap during the day"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -335,11 +343,13 @@
     "Why You\u2019ll Never Be Rich (It\u2019s Not Luck)",
     "Your Brain Can't Tell If You're Dying",
     "Why Your Brain Deletes Your Memories",
-    "What The Money Mindset That Separates Rich Really Means"
+    "What The Money Mindset That Separates Rich Really Means",
+    "Nobody Warned You About The Psychological Reason You Can'T Nap"
   ],
   "used_hooks": [
-    "This is the truth about the money mindset that separates rich from poor that changes everything."
+    "This is the truth about the money mindset that separates rich from poor that changes everything.",
+    "Stop scrolling. The psychological reason you can't nap during the day \u2014 and almost nobody knows why."
   ],
-  "last_video_id": "11g-E1B7iN4",
-  "last_upload": "2026-10-21T18:30:51.482321"
+  "last_video_id": "s22GvZez1Lg",
+  "last_upload": "2026-10-21T23:10:30.338571"
 }
