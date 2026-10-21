@@ -1,8 +1,8 @@
 {
-  "index": 54,
-  "videos_today": 1,
+  "index": 55,
+  "videos_today": 2,
   "today": "2026-10-21",
-  "total_uploaded": 54,
+  "total_uploaded": 55,
   "history": [],
   "uploaded_videos": [
     {
@@ -278,11 +278,19 @@
       "topic": "The psychological reason you forget things instantly",
       "upload_time": "2026-10-21T13:24:20.747575",
       "hook_formula": "Contradiction"
+    },
+    {
+      "video_id": "11g-E1B7iN4",
+      "title": "What The Money Mindset That Separates Rich Really Means",
+      "topic": "The money mindset that separates rich from poor",
+      "upload_time": "2026-10-21T18:30:51.482334",
+      "hook_formula": "topic_synthesis"
     }
   ],
   "used_topics": [
     "Why your brain can't distinguish real from fake danger",
-    "The psychological reason you forget things instantly"
+    "The psychological reason you forget things instantly",
+    "The money mindset that separates rich from poor"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -326,9 +334,12 @@
     "Why You Can't Move On (Brain Hack)",
     "Why You\u2019ll Never Be Rich (It\u2019s Not Luck)",
     "Your Brain Can't Tell If You're Dying",
-    "Why Your Brain Deletes Your Memories"
+    "Why Your Brain Deletes Your Memories",
+    "What The Money Mindset That Separates Rich Really Means"
   ],
-  "used_hooks": [],
-  "last_video_id": "YWj8Wq0TwCk",
-  "last_upload": "2026-10-21T13:24:20.747562"
+  "used_hooks": [
+    "This is the truth about the money mindset that separates rich from poor that changes everything."
+  ],
+  "last_video_id": "11g-E1B7iN4",
+  "last_upload": "2026-10-21T18:30:51.482321"
 }
