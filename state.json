@@ -1,8 +1,8 @@
 {
-  "index": 56,
-  "videos_today": 3,
-  "today": "2026-10-21",
-  "total_uploaded": 56,
+  "index": 57,
+  "videos_today": 1,
+  "today": "2026-10-22",
+  "total_uploaded": 57,
   "history": [],
   "uploaded_videos": [
     {
@@ -292,13 +292,21 @@
       "topic": "The psychological reason you can't nap during the day",
       "upload_time": "2026-10-21T23:10:30.338582",
       "hook_formula": "topic_synthesis"
+    },
+    {
+      "video_id": "xL5x5t1TKeU",
+      "title": "Social Media Is Designed To Addict You",
+      "topic": "Why you always feel drained after socializing",
+      "upload_time": "2026-10-22T13:23:53.502019",
+      "hook_formula": "forbidden_insider"
     }
   ],
   "used_topics": [
     "Why your brain can't distinguish real from fake danger",
     "The psychological reason you forget things instantly",
     "The money mindset that separates rich from poor",
-    "The psychological reason you can't nap during the day"
+    "The psychological reason you can't nap during the day",
+    "Why you always feel drained after socializing"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -344,12 +352,14 @@
     "Your Brain Can't Tell If You're Dying",
     "Why Your Brain Deletes Your Memories",
     "What The Money Mindset That Separates Rich Really Means",
-    "Nobody Warned You About The Psychological Reason You Can'T Nap"
+    "Nobody Warned You About The Psychological Reason You Can'T Nap",
+    "Social Media Is Designed To Addict You"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
-    "Stop scrolling. The psychological reason you can't nap during the day \u2014 and almost nobody knows why."
+    "Stop scrolling. The psychological reason you can't nap during the day \u2014 and almost nobody knows why.",
+    "Social media is designed to make you addicted. Here's the hidden mechanism."
   ],
-  "last_video_id": "s22GvZez1Lg",
-  "last_upload": "2026-10-21T23:10:30.338571"
+  "last_video_id": "xL5x5t1TKeU",
+  "last_upload": "2026-10-22T13:23:53.502006"
 }
