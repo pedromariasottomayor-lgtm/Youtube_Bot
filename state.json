@@ -1,8 +1,8 @@
 {
-  "index": 57,
-  "videos_today": 1,
+  "index": 58,
+  "videos_today": 2,
   "today": "2026-10-22",
-  "total_uploaded": 57,
+  "total_uploaded": 58,
   "history": [],
   "uploaded_videos": [
     {
@@ -299,6 +299,13 @@
       "topic": "Why you always feel drained after socializing",
       "upload_time": "2026-10-22T13:23:53.502019",
       "hook_formula": "forbidden_insider"
+    },
+    {
+      "video_id": "_c5y4m3zaw4",
+      "title": "I Tracked My Dopamine For 30 Days",
+      "topic": "The memory trick that makes you remember everything",
+      "upload_time": "2026-10-22T18:26:39.800498",
+      "hook_formula": "specific_transformation"
     }
   ],
   "used_topics": [
@@ -306,7 +313,8 @@
     "The psychological reason you forget things instantly",
     "The money mindset that separates rich from poor",
     "The psychological reason you can't nap during the day",
-    "Why you always feel drained after socializing"
+    "Why you always feel drained after socializing",
+    "The memory trick that makes you remember everything"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -353,13 +361,15 @@
     "Why Your Brain Deletes Your Memories",
     "What The Money Mindset That Separates Rich Really Means",
     "Nobody Warned You About The Psychological Reason You Can'T Nap",
-    "Social Media Is Designed To Addict You"
+    "Social Media Is Designed To Addict You",
+    "I Tracked My Dopamine For 30 Days"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
     "Stop scrolling. The psychological reason you can't nap during the day \u2014 and almost nobody knows why.",
-    "Social media is designed to make you addicted. Here's the hidden mechanism."
+    "Social media is designed to make you addicted. Here's the hidden mechanism.",
+    "I tracked my dopamine for 30 days. The results changed how I see everything."
   ],
-  "last_video_id": "xL5x5t1TKeU",
-  "last_upload": "2026-10-22T13:23:53.502006"
+  "last_video_id": "_c5y4m3zaw4",
+  "last_upload": "2026-10-22T18:26:39.800484"
 }
