@@ -1,8 +1,8 @@
 {
-  "index": 58,
-  "videos_today": 2,
+  "index": 59,
+  "videos_today": 3,
   "today": "2026-10-22",
-  "total_uploaded": 58,
+  "total_uploaded": 59,
   "history": [],
   "uploaded_videos": [
     {
@@ -306,6 +306,13 @@
       "topic": "The memory trick that makes you remember everything",
       "upload_time": "2026-10-22T18:26:39.800498",
       "hook_formula": "specific_transformation"
+    },
+    {
+      "video_id": "nK42v89c7JM",
+      "title": "Overthinkers Have Geniuses In Their Brain",
+      "topic": "Why people lie in relationships",
+      "upload_time": "2026-10-22T23:24:40.324661",
+      "hook_formula": "identity_bait"
     }
   ],
   "used_topics": [
@@ -314,7 +321,8 @@
     "The money mindset that separates rich from poor",
     "The psychological reason you can't nap during the day",
     "Why you always feel drained after socializing",
-    "The memory trick that makes you remember everything"
+    "The memory trick that makes you remember everything",
+    "Why people lie in relationships"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -362,14 +370,16 @@
     "What The Money Mindset That Separates Rich Really Means",
     "Nobody Warned You About The Psychological Reason You Can'T Nap",
     "Social Media Is Designed To Addict You",
-    "I Tracked My Dopamine For 30 Days"
+    "I Tracked My Dopamine For 30 Days",
+    "Overthinkers Have Geniuses In Their Brain"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
     "Stop scrolling. The psychological reason you can't nap during the day \u2014 and almost nobody knows why.",
     "Social media is designed to make you addicted. Here's the hidden mechanism.",
-    "I tracked my dopamine for 30 days. The results changed how I see everything."
+    "I tracked my dopamine for 30 days. The results changed how I see everything.",
+    "If you can't stop overthinking, your brain is wired for genius. Not anxiety."
   ],
-  "last_video_id": "_c5y4m3zaw4",
-  "last_upload": "2026-10-22T18:26:39.800484"
+  "last_video_id": "nK42v89c7JM",
+  "last_upload": "2026-10-22T23:24:40.324643"
 }
