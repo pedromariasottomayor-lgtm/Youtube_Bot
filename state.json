@@ -1,8 +1,8 @@
 {
-  "index": 61,
-  "videos_today": 2,
+  "index": 62,
+  "videos_today": 3,
   "today": "2026-10-23",
-  "total_uploaded": 61,
+  "total_uploaded": 62,
   "history": [],
   "uploaded_videos": [
     {
@@ -327,6 +327,13 @@
       "topic": "The dark side of identity politics",
       "upload_time": "2026-10-23T18:13:15.573310",
       "hook_formula": "Contradiction"
+    },
+    {
+      "video_id": "SCSYoAN0yDc",
+      "title": "Social Media Is Rewiring Your Brain",
+      "topic": "The dark truth about social media and your brain",
+      "upload_time": "2026-10-23T23:02:08.601959",
+      "hook_formula": "Pattern Interrupt"
     }
   ],
   "used_topics": [
@@ -338,7 +345,8 @@
     "The memory trick that makes you remember everything",
     "Why people lie in relationships",
     "Why your brain creates fears that don't exist",
-    "The dark side of identity politics"
+    "The dark side of identity politics",
+    "The dark truth about social media and your brain"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -389,7 +397,8 @@
     "I Tracked My Dopamine For 30 Days",
     "Overthinkers Have Geniuses In Their Brain",
     "What Your Brain Really Means",
-    "Why Identity Politics Is Ruining Your Brain"
+    "Why Identity Politics Is Ruining Your Brain",
+    "Social Media Is Rewiring Your Brain"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
@@ -399,6 +408,6 @@
     "If you can't stop overthinking, your brain is wired for genius. Not anxiety.",
     "You've been lied to about your brain your whole life."
   ],
-  "last_video_id": "D-b7Uo4QJFA",
-  "last_upload": "2026-10-23T18:13:15.573296"
+  "last_video_id": "SCSYoAN0yDc",
+  "last_upload": "2026-10-23T23:02:08.601947"
 }
