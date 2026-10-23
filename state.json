@@ -1,8 +1,8 @@
 {
-  "index": 59,
-  "videos_today": 3,
-  "today": "2026-10-22",
-  "total_uploaded": 59,
+  "index": 60,
+  "videos_today": 1,
+  "today": "2026-10-23",
+  "total_uploaded": 60,
   "history": [],
   "uploaded_videos": [
     {
@@ -313,6 +313,13 @@
       "topic": "Why people lie in relationships",
       "upload_time": "2026-10-22T23:24:40.324661",
       "hook_formula": "identity_bait"
+    },
+    {
+      "video_id": "8BaMW6TJNv8",
+      "title": "What Your Brain Really Means",
+      "topic": "Why your brain creates fears that don't exist",
+      "upload_time": "2026-10-23T13:02:24.904609",
+      "hook_formula": "topic_synthesis"
     }
   ],
   "used_topics": [
@@ -322,7 +329,8 @@
     "The psychological reason you can't nap during the day",
     "Why you always feel drained after socializing",
     "The memory trick that makes you remember everything",
-    "Why people lie in relationships"
+    "Why people lie in relationships",
+    "Why your brain creates fears that don't exist"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -371,15 +379,17 @@
     "Nobody Warned You About The Psychological Reason You Can'T Nap",
     "Social Media Is Designed To Addict You",
     "I Tracked My Dopamine For 30 Days",
-    "Overthinkers Have Geniuses In Their Brain"
+    "Overthinkers Have Geniuses In Their Brain",
+    "What Your Brain Really Means"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
     "Stop scrolling. The psychological reason you can't nap during the day \u2014 and almost nobody knows why.",
     "Social media is designed to make you addicted. Here's the hidden mechanism.",
     "I tracked my dopamine for 30 days. The results changed how I see everything.",
-    "If you can't stop overthinking, your brain is wired for genius. Not anxiety."
+    "If you can't stop overthinking, your brain is wired for genius. Not anxiety.",
+    "You've been lied to about your brain your whole life."
   ],
-  "last_video_id": "nK42v89c7JM",
-  "last_upload": "2026-10-22T23:24:40.324643"
+  "last_video_id": "8BaMW6TJNv8",
+  "last_upload": "2026-10-23T13:02:24.904595"
 }
