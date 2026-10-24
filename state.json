@@ -1,8 +1,8 @@
 {
-  "index": 64,
-  "videos_today": 2,
+  "index": 65,
+  "videos_today": 3,
   "today": "2026-10-24",
-  "total_uploaded": 64,
+  "total_uploaded": 65,
   "history": [],
   "uploaded_videos": [
     {
@@ -348,6 +348,13 @@
       "topic": "Why your brain makes you wait until the last minute",
       "upload_time": "2026-10-24T17:19:10.695566",
       "hook_formula": "Contradiction"
+    },
+    {
+      "video_id": "T1dCoF4qQMs",
+      "title": "Why Power Turns You Into A Monster",
+      "topic": "The dark truth about power corrupts everyone",
+      "upload_time": "2026-10-24T22:24:20.647469",
+      "hook_formula": "Identity Bait"
     }
   ],
   "used_topics": [
@@ -362,7 +369,8 @@
     "The dark side of identity politics",
     "The dark truth about social media and your brain",
     "The psychological weapon that wins every argument",
-    "Why your brain makes you wait until the last minute"
+    "Why your brain makes you wait until the last minute",
+    "The dark truth about power corrupts everyone"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -416,7 +424,8 @@
     "Why Identity Politics Is Ruining Your Brain",
     "Social Media Is Rewiring Your Brain",
     "The Psychological Weapon That Wins Every Argument",
-    "Why You Wait Until The Last Minute"
+    "Why You Wait Until The Last Minute",
+    "Why Power Turns You Into A Monster"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
@@ -426,6 +435,6 @@
     "If you can't stop overthinking, your brain is wired for genius. Not anxiety.",
     "You've been lied to about your brain your whole life."
   ],
-  "last_video_id": "iFL8xPi1SQI",
-  "last_upload": "2026-10-24T17:19:10.695555"
+  "last_video_id": "T1dCoF4qQMs",
+  "last_upload": "2026-10-24T22:24:20.647458"
 }
