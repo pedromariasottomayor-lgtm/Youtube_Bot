@@ -1,8 +1,8 @@
 {
-  "index": 62,
-  "videos_today": 3,
-  "today": "2026-10-23",
-  "total_uploaded": 62,
+  "index": 63,
+  "videos_today": 1,
+  "today": "2026-10-24",
+  "total_uploaded": 63,
   "history": [],
   "uploaded_videos": [
     {
@@ -334,6 +334,13 @@
       "topic": "The dark truth about social media and your brain",
       "upload_time": "2026-10-23T23:02:08.601959",
       "hook_formula": "Pattern Interrupt"
+    },
+    {
+      "video_id": "Sp0oCzO3FNA",
+      "title": "The Psychological Weapon That Wins Every Argument",
+      "topic": "The psychological weapon that wins every argument",
+      "upload_time": "2026-10-24T12:26:07.655501",
+      "hook_formula": "Pattern Interrupt"
     }
   ],
   "used_topics": [
@@ -346,7 +353,8 @@
     "Why people lie in relationships",
     "Why your brain creates fears that don't exist",
     "The dark side of identity politics",
-    "The dark truth about social media and your brain"
+    "The dark truth about social media and your brain",
+    "The psychological weapon that wins every argument"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -398,7 +406,8 @@
     "Overthinkers Have Geniuses In Their Brain",
     "What Your Brain Really Means",
     "Why Identity Politics Is Ruining Your Brain",
-    "Social Media Is Rewiring Your Brain"
+    "Social Media Is Rewiring Your Brain",
+    "The Psychological Weapon That Wins Every Argument"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
@@ -408,6 +417,6 @@
     "If you can't stop overthinking, your brain is wired for genius. Not anxiety.",
     "You've been lied to about your brain your whole life."
   ],
-  "last_video_id": "SCSYoAN0yDc",
-  "last_upload": "2026-10-23T23:02:08.601947"
+  "last_video_id": "Sp0oCzO3FNA",
+  "last_upload": "2026-10-24T12:26:07.655489"
 }
