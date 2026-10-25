@@ -1,8 +1,8 @@
 {
-  "index": 66,
-  "videos_today": 1,
+  "index": 67,
+  "videos_today": 2,
   "today": "2026-10-25",
-  "total_uploaded": 66,
+  "total_uploaded": 67,
   "history": [],
   "uploaded_videos": [
     {
@@ -362,6 +362,13 @@
       "topic": "Why money creates more problems than it solves",
       "upload_time": "2026-10-25T12:56:44.834007",
       "hook_formula": "Pattern Interrupt"
+    },
+    {
+      "video_id": "lbTyHsxsbj8",
+      "title": "The Confidence Muscle You Never Use",
+      "topic": "The decision making bias that ruins your life",
+      "upload_time": "2026-10-25T17:31:12.071989",
+      "hook_formula": "curiosity_gap"
     }
   ],
   "used_topics": [
@@ -378,7 +385,8 @@
     "The psychological weapon that wins every argument",
     "Why your brain makes you wait until the last minute",
     "The dark truth about power corrupts everyone",
-    "Why money creates more problems than it solves"
+    "Why money creates more problems than it solves",
+    "The decision making bias that ruins your life"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -434,7 +442,8 @@
     "The Psychological Weapon That Wins Every Argument",
     "Why You Wait Until The Last Minute",
     "Why Power Turns You Into A Monster",
-    "Why Money Ruins Your Happiness"
+    "Why Money Ruins Your Happiness",
+    "The Confidence Muscle You Never Use"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
@@ -442,8 +451,9 @@
     "Social media is designed to make you addicted. Here's the hidden mechanism.",
     "I tracked my dopamine for 30 days. The results changed how I see everything.",
     "If you can't stop overthinking, your brain is wired for genius. Not anxiety.",
-    "You've been lied to about your brain your whole life."
+    "You've been lied to about your brain your whole life.",
+    "There's a muscle in your body that controls your confidence. Most people never use it."
   ],
-  "last_video_id": "PBh5yE-k5ko",
-  "last_upload": "2026-10-25T12:56:44.833995"
+  "last_video_id": "lbTyHsxsbj8",
+  "last_upload": "2026-10-25T17:31:12.071976"
 }
