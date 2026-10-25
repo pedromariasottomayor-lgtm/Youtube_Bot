@@ -1,8 +1,8 @@
 {
-  "index": 67,
-  "videos_today": 2,
+  "index": 68,
+  "videos_today": 3,
   "today": "2026-10-25",
-  "total_uploaded": 67,
+  "total_uploaded": 68,
   "history": [],
   "uploaded_videos": [
     {
@@ -369,6 +369,13 @@
       "topic": "The decision making bias that ruins your life",
       "upload_time": "2026-10-25T17:31:12.071989",
       "hook_formula": "curiosity_gap"
+    },
+    {
+      "video_id": "mhg0qQzoB8w",
+      "title": "What The Food Industry Hides From You",
+      "topic": "The psychological reason you crave junk food",
+      "upload_time": "2026-10-25T22:27:11.537603",
+      "hook_formula": "forbidden_insider"
     }
   ],
   "used_topics": [
@@ -386,7 +393,8 @@
     "Why your brain makes you wait until the last minute",
     "The dark truth about power corrupts everyone",
     "Why money creates more problems than it solves",
-    "The decision making bias that ruins your life"
+    "The decision making bias that ruins your life",
+    "The psychological reason you crave junk food"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -443,7 +451,8 @@
     "Why You Wait Until The Last Minute",
     "Why Power Turns You Into A Monster",
     "Why Money Ruins Your Happiness",
-    "The Confidence Muscle You Never Use"
+    "The Confidence Muscle You Never Use",
+    "What The Food Industry Hides From You"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
@@ -452,8 +461,9 @@
     "I tracked my dopamine for 30 days. The results changed how I see everything.",
     "If you can't stop overthinking, your brain is wired for genius. Not anxiety.",
     "You've been lied to about your brain your whole life.",
-    "There's a muscle in your body that controls your confidence. Most people never use it."
+    "There's a muscle in your body that controls your confidence. Most people never use it.",
+    "The food industry is hiding something in your food. And it's legal."
   ],
-  "last_video_id": "lbTyHsxsbj8",
-  "last_upload": "2026-10-25T17:31:12.071976"
+  "last_video_id": "mhg0qQzoB8w",
+  "last_upload": "2026-10-25T22:27:11.537587"
 }
