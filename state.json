@@ -1,8 +1,8 @@
 {
-  "index": 68,
-  "videos_today": 3,
-  "today": "2026-10-25",
-  "total_uploaded": 68,
+  "index": 69,
+  "videos_today": 1,
+  "today": "2026-10-26",
+  "total_uploaded": 69,
   "history": [],
   "uploaded_videos": [
     {
@@ -376,6 +376,13 @@
       "topic": "The psychological reason you crave junk food",
       "upload_time": "2026-10-25T22:27:11.537603",
       "hook_formula": "forbidden_insider"
+    },
+    {
+      "video_id": "ziQOBBiRHus",
+      "title": "Why You Never Feel Like You Fit In",
+      "topic": "Why you always feel like you don't belong anywhere",
+      "upload_time": "2026-10-26T15:09:26.455556",
+      "hook_formula": "Contradiction"
     }
   ],
   "used_topics": [
@@ -394,7 +401,8 @@
     "The dark truth about power corrupts everyone",
     "Why money creates more problems than it solves",
     "The decision making bias that ruins your life",
-    "The psychological reason you crave junk food"
+    "The psychological reason you crave junk food",
+    "Why you always feel like you don't belong anywhere"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -452,7 +460,8 @@
     "Why Power Turns You Into A Monster",
     "Why Money Ruins Your Happiness",
     "The Confidence Muscle You Never Use",
-    "What The Food Industry Hides From You"
+    "What The Food Industry Hides From You",
+    "Why You Never Feel Like You Fit In"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
@@ -464,6 +473,6 @@
     "There's a muscle in your body that controls your confidence. Most people never use it.",
     "The food industry is hiding something in your food. And it's legal."
   ],
-  "last_video_id": "mhg0qQzoB8w",
-  "last_upload": "2026-10-25T22:27:11.537587"
+  "last_video_id": "ziQOBBiRHus",
+  "last_upload": "2026-10-26T15:09:26.455542"
 }
