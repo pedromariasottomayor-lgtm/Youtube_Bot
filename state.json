@@ -1,8 +1,8 @@
 {
-  "index": 69,
-  "videos_today": 1,
+  "index": 70,
+  "videos_today": 2,
   "today": "2026-10-26",
-  "total_uploaded": 69,
+  "total_uploaded": 70,
   "history": [],
   "uploaded_videos": [
     {
@@ -383,6 +383,13 @@
       "topic": "Why you always feel like you don't belong anywhere",
       "upload_time": "2026-10-26T15:09:26.455556",
       "hook_formula": "Contradiction"
+    },
+    {
+      "video_id": "vjydQNHvG7I",
+      "title": "Why You Trust Liars Who Sound Confident",
+      "topic": "Why people always believe someone who sounds certain",
+      "upload_time": "2026-10-26T19:59:37.118441",
+      "hook_formula": "Contradiction"
     }
   ],
   "used_topics": [
@@ -402,7 +409,8 @@
     "Why money creates more problems than it solves",
     "The decision making bias that ruins your life",
     "The psychological reason you crave junk food",
-    "Why you always feel like you don't belong anywhere"
+    "Why you always feel like you don't belong anywhere",
+    "Why people always believe someone who sounds certain"
   ],
   "used_titles": [
     "Amazing Facts: The psychology behind why we procrastinate",
@@ -461,7 +469,8 @@
     "Why Money Ruins Your Happiness",
     "The Confidence Muscle You Never Use",
     "What The Food Industry Hides From You",
-    "Why You Never Feel Like You Fit In"
+    "Why You Never Feel Like You Fit In",
+    "Why You Trust Liars Who Sound Confident"
   ],
   "used_hooks": [
     "This is the truth about the money mindset that separates rich from poor that changes everything.",
@@ -473,6 +482,6 @@
     "There's a muscle in your body that controls your confidence. Most people never use it.",
     "The food industry is hiding something in your food. And it's legal."
   ],
-  "last_video_id": "ziQOBBiRHus",
-  "last_upload": "2026-10-26T15:09:26.455542"
+  "last_video_id": "vjydQNHvG7I",
+  "last_upload": "2026-10-26T19:59:37.118429"
 }
