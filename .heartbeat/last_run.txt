@@ -1,1 +1,1 @@
-2026-11-11T00:43:57Z run=305 status=failure
+2026-11-11T16:28:34Z run=306 status=cancelled
